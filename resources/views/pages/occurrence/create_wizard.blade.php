@@ -440,12 +440,19 @@
 @push('scripts')
 <script>
 (function () {
-  // ====== Config ======
-  const STORAGE_KEY_FORM  = 'occ_wizard_draft_v1';
-  const STORAGE_KEY_TAB   = 'occ_wizard_active_v1';
-  const OCC_FORM_SELECTOR = '#occ-form';  // Sólo guardamos Occurrence (puedes agregar más)
+  // ====== Claves de almacenamiento ======
+  const KEY_OCC   = 'occ_wizard_occurrence_v2';
+  const KEY_RL    = 'occ_wizard_record_level_v2';
+  const KEY_ORG   = 'occ_wizard_organism_v2';
+  const KEY_LOC   = 'occ_wizard_location_v2';
+  const KEY_TAX   = 'occ_wizard_taxon_v2';
+  const KEY_ID    = 'occ_wizard_identification_v2';
+  const KEY_TAB   = 'occ_wizard_active_v2';
+  const KEY_LINKS = 'occ_wizard_links_v2'; // { record_level: {id,label}, organism: {...}, ... }
 
-  // ====== Utils ======
+  // ====== Utilidades ======
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
   function debounce(fn, ms) {
     let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
   }
@@ -455,7 +462,7 @@
     const fields = root.querySelectorAll('input[name], select[name], textarea[name]');
     fields.forEach(el => {
       if (el.disabled) return;
-      if (el.type === 'file') return; // files no
+      if (el.type === 'file') return;
       const name = el.name;
       if (el.type === 'checkbox') {
         if (!out[name]) out[name] = [];
@@ -476,7 +483,6 @@
     fields.forEach(el => {
       const name = el.name;
       if (!(name in data)) return;
-
       if (el.type === 'checkbox') {
         const arr = Array.isArray(data[name]) ? data[name] : [data[name]];
         el.checked = arr.includes(el.value || 'on');
@@ -488,73 +494,194 @@
       } else {
         el.value = data[name] ?? '';
       }
-
-      // Dispara change para que plugins/validaciones se actualicen
       el.dispatchEvent(new Event('change', { bubbles: true }));
     });
   }
 
-  // ====== 1) Persistencia del formulario de Occurrence ======
-  const occForm = document.querySelector(OCC_FORM_SELECTOR);
-  if (!occForm) return;
+  function getJSON(key, fallback = {}) {
+    try { return JSON.parse(localStorage.getItem(key) || '') ?? fallback; }
+    catch { return fallback; }
+  }
+  function setJSON(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
 
-  // Restaurar si hay borrador
-  let draft = {};
-  try { draft = JSON.parse(localStorage.getItem(STORAGE_KEY_FORM) || '{}'); } catch(_) {}
-  if (draft && Object.keys(draft).length) {
-    restoreForm(occForm, draft);
-    console.info('Borrador de Occurrence restaurado.');
+  // ====== Resumen + vínculos (hidden + spans) ======
+  const SELECT_MAP = {
+    record_level: { input: 'record_level_id', summary: 'summary-rl'  },
+    organism:     { input: 'organismID',       summary: 'summary-org' },
+    location:     { input: 'locationID',       summary: 'summary-loc' },
+    taxon:        { input: 'taxonID',          summary: 'summary-tax' },
+    identification:{input: 'identificationID', summary: 'summary-id'  },
+  };
+
+  function setLink(kind, id, label) {
+    const cfg = SELECT_MAP[kind]; if (!cfg) return;
+    // hidden
+    const $in = document.getElementById(cfg.input);
+    if ($in) $in.value = id || '';
+    // resumen
+    const $sum = document.getElementById(cfg.summary);
+    if ($sum) $sum.textContent = label || id || '—';
+
+    // Persistir selección
+    const links = getJSON(KEY_LINKS, {});
+    links[kind] = { id, label };
+    setJSON(KEY_LINKS, links);
+
+    // Reflejar también en el borrador del form Occurrence (para no perder al F5)
+    const occDraft = getJSON(KEY_OCC, {});
+    occDraft[cfg.input] = id;
+    setJSON(KEY_OCC, occDraft);
   }
 
-  // Guardar al teclear/cambiar (debounced)
-  const saveDraft = debounce(() => {
-    const data = serializeForm(occForm);
-    localStorage.setItem(STORAGE_KEY_FORM, JSON.stringify(data));
-    dirty = true;
-  }, 250);
-
-  occForm.addEventListener('input',  saveDraft);
-  occForm.addEventListener('change', saveDraft);
-
-  // Botón para limpiar borrador (añádelo donde quieras)
-  // <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-clear-draft">Limpiar borrador</button>
-  document.getElementById('btn-clear-draft')?.addEventListener('click', function(){
-    localStorage.removeItem(STORAGE_KEY_FORM);
-    dirty = false;
-    alert('Borrador eliminado. (Los campos permanecen como están hasta recargar)');
-  });
-
-  // Al guardar definitivamente Occurrence, limpia el borrador
-  occForm.addEventListener('submit', function () {
-    localStorage.removeItem(STORAGE_KEY_FORM);
-    dirty = false;
-  });
-
-  // ====== 2) Recordar tab activo (Bootstrap tabs) ======
-  // Guarda el tab mostrado
-  document.querySelectorAll('[data-bs-toggle="tab"]').forEach(el => {
-    el.addEventListener('shown.bs.tab', (e) => {
-      const targetSel = e.target?.getAttribute('data-bs-target') || e.target?.getAttribute('href');
-      if (targetSel) localStorage.setItem(STORAGE_KEY_TAB, targetSel);
-    });
-  });
-  // Restaura el tab activo
-  const savedTab = localStorage.getItem(STORAGE_KEY_TAB);
-  if (savedTab) {
-    const trigger = document.querySelector(`[data-bs-target="${savedTab}"], a[href="${savedTab}"]`);
-    if (trigger && window.bootstrap?.Tab) {
-      new bootstrap.Tab(trigger).show();
+  function restoreLinks() {
+    const links = getJSON(KEY_LINKS, {});
+    for (const [kind, v] of Object.entries(links)) {
+      if (v && typeof v === 'object') setLink(kind, v.id, v.label);
     }
   }
 
-  // ====== 3) Alerta al salir si hay cambios sin guardar ======
-  let dirty = false;
+  // ====== Autosave genérico por formulario ======
+  let dirty = false; // alerta al salir
+
+  function registerAutosave(formSelector, storageKey) {
+    const form = document.querySelector(formSelector);
+    if (!form) return;
+
+    // Restaurar
+    const draft = getJSON(storageKey, {});
+    if (Object.keys(draft).length) restoreForm(form, draft);
+
+    // Guardar
+    const save = debounce(() => {
+      const data = serializeForm(form);
+      setJSON(storageKey, data);
+      dirty = true;
+    }, 250);
+    form.addEventListener('input',  save);
+    form.addEventListener('change', save);
+
+    // Si el form envía (sea AJAX o clásico), limpiamos ese draft
+    form.addEventListener('submit', () => {
+      localStorage.removeItem(storageKey);
+      dirty = false;
+    });
+  }
+
+  // Registrar autosave para TODOS los tabs
+  registerAutosave('#occ-form',        KEY_OCC);
+  registerAutosave('#rl-form',         KEY_RL);
+  registerAutosave('#organism-form',   KEY_ORG);
+  registerAutosave('#location-form',   KEY_LOC);
+  registerAutosave('#taxon-form',      KEY_TAX);
+  registerAutosave('#identification-form', KEY_ID);
+
+  // ====== Restaurar links (resumen e inputs ocultos) al cargar ======
+  restoreLinks();
+
+  // ====== Recordar tab activo ======
+  document.querySelectorAll('[data-bs-toggle="tab"]').forEach(el => {
+    el.addEventListener('shown.bs.tab', (e) => {
+      const targetSel = e.target?.getAttribute('data-bs-target') || e.target?.getAttribute('href');
+      if (targetSel) localStorage.setItem(KEY_TAB, targetSel);
+    });
+  });
+  const savedTab = localStorage.getItem(KEY_TAB);
+  if (savedTab) {
+    const trigger = document.querySelector(`[data-bs-target="${savedTab}"], a[href="${savedTab}"]`);
+    if (trigger && window.bootstrap?.Tab) new bootstrap.Tab(trigger).show();
+  }
+
+  // ====== Interceptar submit de subforms (AJAX) y fijar vínculos ======
+  async function postForm(form, onOk) {
+    const res = await fetch(form.action, {
+      method: form.method || 'POST',
+      headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+      body: new FormData(form),
+    });
+    if (!res.ok) {
+      let msg = 'Error al guardar';
+      try { const j = await res.json(); if (j?.message) msg = j.message; } catch {}
+      alert(msg);
+      return;
+    }
+    const data = await res.json(); // {id, label?}
+    if (typeof onOk === 'function') onOk(data);
+  }
+
+  // Record level
+  const rlForm = document.getElementById('rl-form');
+  if (rlForm) rlForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await postForm(rlForm, ({id, label}) => {
+      setLink('record_level', id, label || ('#'+id));
+      alert('Record level guardado y asignado: '+id);
+      // Volver al tab Occurrence
+      const trigger = document.querySelector('[data-bs-target="#tab-occurrence"], a[href="#tab-occurrence"]');
+      if (trigger && window.bootstrap?.Tab) new bootstrap.Tab(trigger).show();
+    });
+  });
+
+  // Organism
+  const orgForm = document.getElementById('organism-form');
+  if (orgForm) orgForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await postForm(orgForm, ({id, label}) => {
+      setLink('organism', id, label || id);
+      alert('Organism guardado y asignado: '+id);
+      const trigger = document.querySelector('[data-bs-target="#tab-occurrence"], a[href="#tab-occurrence"]');
+      if (trigger && window.bootstrap?.Tab) new bootstrap.Tab(trigger).show();
+    });
+  });
+
+  // Location
+  const locForm = document.getElementById('location-form');
+  if (locForm) locForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await postForm(locForm, ({id, label}) => {
+      setLink('location', id, label || id);
+      alert('Location guardado y asignado: '+id);
+      const trigger = document.querySelector('[data-bs-target="#tab-occurrence"], a[href="#tab-occurrence"]');
+      if (trigger && window.bootstrap?.Tab) new bootstrap.Tab(trigger).show();
+    });
+  });
+
+  // Taxon
+  const taxForm = document.getElementById('taxon-form');
+  if (taxForm) taxForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await postForm(taxForm, ({id, label}) => {
+      setLink('taxon', id, label || id);
+      alert('Taxon guardado y asignado: '+id);
+      const trigger = document.querySelector('[data-bs-target="#tab-occurrence"], a[href="#tab-occurrence"]');
+      if (trigger && window.bootstrap?.Tab) new bootstrap.Tab(trigger).show();
+    });
+  });
+
+  // Identification
+  const idForm = document.getElementById('identification-form');
+  if (idForm) idForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await postForm(idForm, ({id, label}) => {
+      setLink('identification', id, label || id);
+      alert('Identification guardado y asignado: '+id);
+      const trigger = document.querySelector('[data-bs-target="#tab-occurrence"], a[href="#tab-occurrence"]');
+      if (trigger && window.bootstrap?.Tab) new bootstrap.Tab(trigger).show();
+    });
+  });
+
+  // ====== Aviso al salir si hay cambios ======
   window.addEventListener('beforeunload', function (e) {
-    // si hay algo guardado en borrador o se modificó en esta sesión
-    const stored = localStorage.getItem(STORAGE_KEY_FORM);
-    if (dirty || (stored && stored !== '{}' )) {
+    // Si existe cualquiera de los borradores o hicimos cambios
+    const anyDraft =
+      localStorage.getItem(KEY_OCC) ||
+      localStorage.getItem(KEY_RL)  ||
+      localStorage.getItem(KEY_ORG) ||
+      localStorage.getItem(KEY_LOC) ||
+      localStorage.getItem(KEY_TAX) ||
+      localStorage.getItem(KEY_ID);
+    if (dirty || anyDraft) {
       e.preventDefault();
-      e.returnValue = ''; // algunos navegadores requieren string vacío
+      e.returnValue = '';
       return '';
     }
   });
@@ -562,3 +689,4 @@
 })();
 </script>
 @endpush
+
