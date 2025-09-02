@@ -76,7 +76,7 @@
           <div>Identification: <span id="summary-id">—</span></div>
         </div>
 
-        {{-- Hidden real + campo de solo lectura + botón modal --}}
+        {{--  RECORD LEVEL Hidden real + campo de solo lectura + botón modal --}}
         <input type="hidden" name="record_level_id" id="record_level_id"
               value="{{ old('record_level_id', $item->record_level_id ?? '') }}">
 
@@ -122,6 +122,31 @@
         </div>
 
         <small id="summary-org" class="text-muted d-block mt-1">—</small>
+
+
+        {{-- LOCATION: hidden real + label lectura + botón modal + acciones --}}
+        <input type="hidden" name="locationID" id="locationID"
+              value="{{ old('locationID', $item->locationID ?? '') }}">
+
+        <label class="label d-block">Location</label>
+        <div class="input-group align-items-center">
+          <input type="text" id="location_label" class="form-control"
+                placeholder="Selecciona o crea una Location"
+                value="{{ isset($item->locationID) ? $item->locationID : '' }}"
+                readonly>
+
+          <button type="button" class="btn btn-outline-primary"
+                  data-bs-toggle="modal" data-bs-target="#modal-location">
+            Elegir / Crear
+          </button>
+        </div>
+
+        <div id="loc-actions" class="mt-1 d-flex gap-3" style="display:none">
+          <a id="loc-view" class="btn btn-link p-0" target="_blank" rel="noopener noreferrer">Ver</a>
+          <a id="loc-edit" class="btn btn-link p-0" target="_blank" rel="noopener noreferrer">Editar</a>
+        </div>
+
+        <small id="summary-loc" class="text-muted d-block mt-1">—</small>
 
 
 
@@ -555,26 +580,13 @@
                 {{-- Form de creación/edición rápida --}}
                 <form id="org-modal-form" action="{{ route('ajax.organisms.store') }}" method="POST">
                   @csrf
-                  <div class="row g-3">
-                    <div class="col-md-6">
-                      <label class="label" for="org_organismID">Organism ID (vacío = se genera)</label>
-                      <input type="text" name="organismID" id="org_organismID" class="form-control">
-                    </div>
-                    <div class="col-12">
-                      <label class="label" for="org_associatedOccurrences">Associated Occurrences</label>
-                      <textarea name="associatedOccurrences" id="org_associatedOccurrences" rows="2" class="form-control"></textarea>
-                    </div>
-                    <div class="col-12">
-                      <label class="label" for="org_associatedOrganisms">Associated Organisms</label>
-                      <textarea name="associatedOrganisms" id="org_associatedOrganisms" rows="2" class="form-control"></textarea>
-                    </div>
-                    <div class="col-12">
-                      <label class="label" for="org_previousIdentifications">Previous Identifications</label>
-                      <textarea name="previousIdentifications" id="org_previousIdentifications" rows="2" class="form-control"></textarea>
-                    </div>
-                  </div>
 
-                  <div class="mt-3 d-flex gap-2">
+                   @include('pages.organism.partials.form', [
+                      'item' => null,
+                      'idPrefix' => 'ml_'
+                  ])
+
+                  <div class="mt-3 d-flex gap-2">----
                     <button type="submit" class="btn btn-primary">Guardar y usar</button>
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                   </div>
@@ -750,7 +762,217 @@
         @endpush
 
 
-         {{--------------- FIN DEL PROCESO ---------------------}}
+        {{--------------- FIN DEL PROCESO ---------------------}}
+
+        {{--------------- INICIO DEL PROCESO LOCATION ---------------------}}
+
+        <div class="modal fade" id="modal-location" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Location — Buscar / Crear</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+              </div>
+
+              <div class="modal-body">
+                {{-- Buscador --}}
+                <div class="mb-3">
+                  <label class="label">Buscar Location</label>
+                  <input type="text" id="loc-search" class="form-control" placeholder="ID, locality, country, state/province…">
+                  <div id="loc-results" class="list-group mt-2"></div>
+                </div>
+
+                <hr class="my-3">
+
+                {{-- Modal Location (sólo cambio el cuerpo del <form>) --}}
+                <form id="loc-modal-form" action="{{ route('ajax.locations.store') }}" method="POST">
+                  @csrf
+
+                  {{-- Reutilizamos el partial con TODOS los campos.
+                      - idPrefix solo afecta los "id" y "for" (NO los "name"), para evitar colisiones de IDs.
+                      - $item = null porque es creación rápida en modal.
+                  --}}
+                  @include('pages.location.partials.form', [
+                      'item' => null,
+                      'idPrefix' => 'ml_'
+                  ])
+
+                  <div class="mt-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Guardar y usar</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  </div>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        </div>
+        @push('scripts')
+        <script>
+        (function () {
+          const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+          // Rutas Ver/Editar
+          const locShowTpl = @json(route('location.show', '__ID__'));
+          const locEditTpl = @json(route('location.edit', '__ID__'));
+
+          // Helpers
+          function showToast(message, variant = 'success') {
+            const area = document.getElementById('toast-area');
+            if (!area || !window.bootstrap) { alert(message); return; }
+            const el = document.createElement('div');
+            el.className = `toast align-items-center text-bg-${variant} border-0`;
+            el.setAttribute('role','alert');
+            el.setAttribute('aria-live','assertive');
+            el.setAttribute('aria-atomic','true');
+            el.innerHTML = `
+              <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+              </div>`;
+            area.appendChild(el);
+            const t = new bootstrap.Toast(el, { delay: 2500, autohide: true });
+            t.show();
+            el.addEventListener('hidden.bs.toast', () => el.remove());
+          }
+
+          function closeModalById(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            let inst = window.bootstrap?.Modal.getInstance(el) || window.bootstrap?.Modal.getOrCreateInstance(el);
+            if (inst) inst.hide();
+            else {
+              el.classList.remove('show'); el.style.display = 'none';
+              document.body.classList.remove('modal-open');
+              document.body.style.removeProperty('padding-right');
+              document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+            }
+          }
+
+          function updateLocLinks(id) {
+            const $actions = document.getElementById('loc-actions');
+            const $view    = document.getElementById('loc-view');
+            const $edit    = document.getElementById('loc-edit');
+
+            if (id && $actions && $view && $edit) {
+              $view.href = locShowTpl.replace('__ID__', encodeURIComponent(id));
+              $edit.href = locEditTpl.replace('__ID__', encodeURIComponent(id));
+              $actions.style.display = 'flex';
+            } else if ($actions) {
+              $actions.style.display = 'none';
+            }
+          }
+
+          function applyLocation(id, label) {
+            document.getElementById('locationID').value = id;
+            const $label = document.getElementById('location_label');
+            if ($label) $label.value = label || id;
+            const $sum = document.getElementById('summary-loc');
+            if ($sum) $sum.textContent = label || id;
+
+            updateLocLinks(id);
+            closeModalById('modal-location');
+            showToast('Location guardada/asignada ✅', 'success');
+
+            // Persistencia opcional (autosave wizard)
+            try {
+              const draft = JSON.parse(localStorage.getItem('occ_wizard_occurrence_v2') || '{}');
+              draft['locationID'] = id;
+              localStorage.setItem('occ_wizard_occurrence_v2', JSON.stringify(draft));
+
+              const links = JSON.parse(localStorage.getItem('occ_wizard_links_v2') || '{}');
+              links['location'] = { id, label: label || id };
+              localStorage.setItem('occ_wizard_links_v2', JSON.stringify(links));
+            } catch {}
+          }
+
+          // Submit AJAX del form en la modal
+          const locForm   = document.getElementById('loc-modal-form');
+          const submitBtn = locForm?.querySelector('button[type="submit"]');
+
+          locForm?.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const originalHTML = submitBtn?.innerHTML;
+            submitBtn?.setAttribute('disabled','disabled');
+            if (submitBtn) submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Guardando...`;
+
+            try {
+              const res = await fetch(locForm.action, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                  'X-CSRF-TOKEN': csrf,
+                  'X-Requested-With': 'XMLHttpRequest',
+                  'Accept': 'application/json'
+                },
+                body: new FormData(locForm)
+              });
+
+              if (!res.ok) {
+                let msg = 'Error al guardar';
+                try { const j = await res.json(); if (j?.message) msg = j.message; } catch {}
+                showToast(msg, 'danger');
+                return;
+              }
+
+              const data = await res.json(); // { id, label }
+              applyLocation(data.id, data.label);
+
+            } catch (err) {
+              showToast('Error de red o servidor.', 'danger');
+            } finally {
+              if (submitBtn) {
+                submitBtn.innerHTML = originalHTML || 'Guardar y usar';
+                submitBtn.removeAttribute('disabled');
+              }
+            }
+          });
+
+          // Buscador en la modal
+          const $q = document.getElementById('loc-search');
+          const $results = document.getElementById('loc-results');
+
+          function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+
+          if ($q && $results) {
+            const doSearch = debounce(async () => {
+              const q = $q.value.trim();
+              if (q.length < 2) { $results.innerHTML = ''; return; }
+
+              const url = @json(route('ajax.locations.search')) + '?q=' + encodeURIComponent(q);
+              const res = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials:'same-origin' });
+              const items = res.ok ? await res.json() : [];
+
+              $results.innerHTML = (items && items.length && items[0].id !== '')
+                ? items.map(i => `
+                    <button type="button" class="list-group-item list-group-item-action"
+                            data-id="${i.id}" data-label="${i.text}">
+                      ${i.text}
+                    </button>`).join('')
+                : '<div class="list-group-item text-muted">Sin resultados</div>';
+            }, 300);
+
+            $q.addEventListener('input', doSearch);
+
+            $results.addEventListener('click', (e) => {
+              const btn = e.target.closest('.list-group-item');
+              if (!btn) return;
+              applyLocation(btn.dataset.id, btn.dataset.label);
+              showToast('Location asignada ✅');
+            });
+          }
+
+          // Estado inicial: si ya existe locationID, mostrar acciones
+          document.addEventListener('DOMContentLoaded', () => {
+            const current = document.getElementById('locationID')?.value;
+            if (current) updateLocLinks(current);
+          });
+        })();
+        </script>
+        @endpush
+
+      {{--------------- FIN DEL PROCESO ---------------------}}
 
 
 
