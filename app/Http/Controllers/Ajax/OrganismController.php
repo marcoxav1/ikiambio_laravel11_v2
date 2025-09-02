@@ -6,62 +6,75 @@ use App\Http\Controllers\Controller;
 use App\Models\Organism;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class OrganismController extends Controller
 {
     public function store(Request $request)
     {
+        // Validación: si no pasas organismID, lo generamos (uuid)
         $data = $request->validate([
-            'organismID'                 => ['nullable','string','max:255'],
-            'associatedOccurrences'      => ['nullable','string'],
-            'associatedOrganisms'        => ['nullable','string'],
-            'previousIdentifications'    => ['nullable','string'],
+            'organismID'               => ['nullable','string','max:255','unique:organism,organismID'],
+            'associatedOccurrences'    => ['nullable','string'],
+            'associatedOrganisms'      => ['nullable','string'],
+            'previousIdentifications'  => ['nullable','string'],
         ]);
 
-        $id = $data['organismID'] ?? Str::uuid()->toString();
+        if (empty($data['organismID'])) {
+            $data['organismID'] = (string) \Illuminate\Support\Str::uuid();
+        }
 
-        DB::transaction(function () use (&$id, $data) {
-            $org = Organism::updateOrCreate(
-                ['organismID' => $id],
-                [
-                    'associatedOccurrences'   => $data['associatedOccurrences']   ?? null,
-                    'associatedOrganisms'     => $data['associatedOrganisms']     ?? null,
-                    'previousIdentifications' => $data['previousIdentifications'] ?? null,
-                ]
-            );
-            $id = $org->organismID;
-        });
+        $org = DB::transaction(fn() => Organism::create($data));
 
-        return response()->json(['ok' => true, 'id' => $id]);
+        // Construye label legible
+        $labelParts = [$org->organismID];
+        if ($org->associatedOccurrences)    $labelParts[] = \Illuminate\Support\Str::limit($org->associatedOccurrences, 40);
+        if ($org->associatedOrganisms)      $labelParts[] = \Illuminate\Support\Str::limit($org->associatedOrganisms, 40);
+        if ($org->previousIdentifications)  $labelParts[] = \Illuminate\Support\Str::limit($org->previousIdentifications, 40);
+
+        return response()->json([
+            'id'    => $org->organismID,
+            'label' => implode(' — ', $labelParts),
+        ]);
     }
 
     public function search(Request $request)
     {
-        $q = trim((string) $request->query('q', ''));
+        $q = trim((string)$request->query('q', ''));
         if ($q === '') return response()->json([]);
 
-        // Para PostgreSQL: usar ILIKE (case-insensitive)
         $like = "%{$q}%";
 
-        $rows = \App\Models\Organism::query()
-            ->where('organismID', 'ilike', $like)
-            ->orWhere('associatedOccurrences', 'ilike', $like)
-            ->orWhere('associatedOrganisms', 'ilike', $like)
-            ->orWhere('previousIdentifications', 'ilike', $like)
-            ->orderBy('organismID')
+        $rows = Organism::query()
+            // si coincide EXACTAMENTE con el ID, dale prioridad
+            ->when($q !== '', function ($qq) use ($q, $like) {
+                $qq->where(function ($w) use ($q, $like) {
+                    $w->where('organismID', 'ilike', $like)
+                      ->orWhere('associatedOccurrences',   'ilike', $like)
+                      ->orWhere('associatedOrganisms',     'ilike', $like)
+                      ->orWhere('previousIdentifications', 'ilike', $like);
+                });
+            })
+            ->orderBy('organismID') // ordenar por ID
             ->limit(20)
             ->get(['organismID', 'associatedOccurrences', 'associatedOrganisms', 'previousIdentifications']);
 
         $items = $rows->map(function ($r) {
-            $pieces = array_filter([
-                $r->associatedOccurrences ? 'occ: '.\Illuminate\Support\Str::limit($r->associatedOccurrences, 30) : null,
-                $r->associatedOrganisms ? 'org: '.\Illuminate\Support\Str::limit($r->associatedOrganisms, 30) : null,
-                $r->previousIdentifications ? 'prev: '.\Illuminate\Support\Str::limit($r->previousIdentifications, 30) : null,
-            ]);
-            $text = $r->organismID.(count($pieces) ? ' — '.implode(' | ', $pieces) : '');
-            return ['id' => $r->organismID, 'text' => $text];
+            $bits = [
+                $r->organismID,
+                $r->associatedOccurrences,
+                $r->associatedOrganisms,
+                $r->previousIdentifications,
+            ];
+            $bits = array_values(array_filter($bits));
+            $label = implode(' — ', array_map(fn($x) => \Illuminate\Support\Str::limit($x, 40), $bits));
+
+            return ['id' => $r->organismID, 'text' => $label];
         });
+
+        // Si no hay resultados
+        if ($items->isEmpty()) {
+            return response()->json([['id' => '', 'text' => '— Sin resultados —']]);
+        }
 
         return response()->json($items);
     }

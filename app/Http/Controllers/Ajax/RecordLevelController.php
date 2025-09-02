@@ -25,7 +25,7 @@ use App\Models\Vocab\RecordLevel\Basisofrecord;
 class RecordLevelController extends Controller
 {
     /** GET /ajax/record-levels/search?q=...  => [{id,text}] */
-    public function search(Request $request)
+    /* public function search(Request $request)
     {
         $q = trim((string) $request->query('q', ''));
         if ($q === '') {
@@ -53,7 +53,29 @@ class RecordLevelController extends Controller
         });
 
         return response()->json($items);
-    }
+    } */
+
+    /** Búsqueda simple para reutilizar record levels existentes */
+    public function search(Request $request)
+    {
+        $q = trim((string)$request->query('q', ''));
+        if ($q === '') return response()->json([]);
+
+        $rows = RecordLevel::query()
+            ->when(ctype_digit($q), fn($qq) => $qq->orWhere('record_level_id', (int)$q))
+            ->orWhere('datasetName', 'ilike', "%{$q}%")
+            ->orWhere('references', 'ilike', "%{$q}%")
+            ->orderByDesc('record_level_id')
+            ->limit(20)
+            ->get(['record_level_id','datasetName','references','datasetID']);
+
+        return response()->json(
+            $rows->map(fn($r) => [
+                'id'   => $r->record_level_id,
+                'text' => '#'.$r->record_level_id.' - '.$r->references.' - '.$r->datasetID.' - '.($r->datasetName ? ' - '.$r->datasetName : ''),
+            ])
+        );
+    }    
 
     /** POST /ajax/record-levels  => { id }  (crea o actualiza si envían record_level_id) */
     public function store(Request $request)
