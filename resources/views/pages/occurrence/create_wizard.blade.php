@@ -76,6 +76,57 @@
           <div>Identification: <span id="summary-id">—</span></div>
         </div>
 
+        {{-- Hidden real + campo de solo lectura + botón modal --}}
+        <input type="hidden" name="record_level_id" id="record_level_id"
+              value="{{ old('record_level_id', $item->record_level_id ?? '') }}">
+
+        <label class="label d-block">Record level</label>
+        <div class="input-group">
+          <input type="text" id="record_level_label" class="form-control"
+                placeholder="Selecciona o crea un Record level"
+                value="{{ isset($item->record_level_id) ? ('#'.$item->record_level_id.($item->recordLevel?->datasetName ? ' — '.$item->recordLevel->datasetName : '')) : '' }}"
+                readonly>
+          <button type="button" class="btn btn-outline-primary"
+                  data-bs-toggle="modal" data-bs-target="#modal-record-level">
+            Elegir / Crear
+          </button>&nbsp;
+          {{-- Acciones sobre el registro seleccionado --}}
+          <div id="rl-actions" class="mt-1" style="display:none">
+            <a id="rl-view"  class="btn btn-link p-2" target="_blank" rel="noopener noreferrer">Ver</a>
+            <a id="rl-edit"  class="btn btn-link p-2" target="_blank" rel="noopener noreferrer">Editar</a>
+          </div>
+        </div>
+
+        <small id="summary-rl" class="text-muted d-block mt-1">—</small>
+
+
+        {{-- ORGANISM: hidden real + label lectura + botón modal + acciones --}}
+        <input type="hidden" name="organismID" id="organismID"
+              value="{{ old('organismID', $item->organismID ?? '') }}">
+
+        <label class="label d-block">Organism</label>
+        <div class="input-group align-items-center">
+          <input type="text" id="organism_label" class="form-control"
+                placeholder="Selecciona o crea un Organism"
+                value="{{ isset($item->organismID) ? $item->organismID : '' }}"
+                readonly>
+
+          <button type="button" class="btn btn-outline-primary"
+                  data-bs-toggle="modal" data-bs-target="#modal-organism">
+            Elegir / Crear
+          </button>&nbsp;
+          <div id="org-actions" class="mt-1" style="display:none">
+            <a id="org-view" class="btn btn-link p-2" target="_blank" rel="noopener noreferrer">Ver</a>
+            <a id="org-edit" class="btn btn-link p-2" target="_blank" rel="noopener noreferrer">Editar</a>
+          </div>
+        </div>
+
+        <small id="summary-org" class="text-muted d-block mt-1">—</small>
+
+
+
+
+
         {{-- ===== Campos propios de OCCURRENCE ===== --}}
         <div class="row g-3">
           <div class="col-md-4">
@@ -201,49 +252,49 @@
           </div>
 
           {{-- Textos largos --}}
-          <div class="col-12">
+          <div class="col-md-4">
             <label class="label" for="behavior">Behavior</label>
             <textarea name="behavior" id="behavior" rows="2" class="input">{{ old('behavior') }}</textarea>
             @error('behavior') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
-          <div class="col-12">
+          <div class="col-md-4">
             <label class="label" for="substrate">Substrate</label>
             <textarea name="substrate" id="substrate" rows="2" class="input">{{ old('substrate') }}</textarea>
             @error('substrate') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
-          <div class="col-12">
+          <div class="col-md-4">
             <label class="label" for="preparations">Preparations</label>
             <textarea name="preparations" id="preparations" rows="2" class="input">{{ old('preparations') }}</textarea>
             @error('preparations') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
-          <div class="col-12">
+          <div class="col-md-4">
             <label class="label" for="associatedMedia">Associated media</label>
             <textarea name="associatedMedia" id="associatedMedia" rows="2" class="input">{{ old('associatedMedia') }}</textarea>
             @error('associatedMedia') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
-          <div class="col-12">
+          <div class="col-md-4">
             <label class="label" for="associatedSequences">Associated sequences</label>
             <textarea name="associatedSequences" id="associatedSequences" rows="2" class="input">{{ old('associatedSequences') }}</textarea>
             @error('associatedSequences') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
-          <div class="col-12">
+          <div class="col-md-4">
             <label class="label" for="associatedTaxa">Associated taxa</label>
             <textarea name="associatedTaxa" id="associatedTaxa" rows="2" class="input">{{ old('associatedTaxa') }}</textarea>
             @error('associatedTaxa') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
-          <div class="col-12">
+          <div class="col-md-4">
             <label class="label" for="otherCatalogNumbers">Other catalog numbers</label>
             <textarea name="otherCatalogNumbers" id="otherCatalogNumbers" rows="2" class="input">{{ old('otherCatalogNumbers') }}</textarea>
             @error('otherCatalogNumbers') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
-          <div class="col-12">
+          <div class="col-md-4">
             <label class="label" for="occurrenceRemarks">Occurrence remarks</label>
             <textarea name="occurrenceRemarks" id="occurrenceRemarks" rows="2" class="input">{{ old('occurrenceRemarks') }}</textarea>
             @error('occurrenceRemarks') <small class="text-danger">{{ $message }}</small> @enderror
@@ -252,8 +303,457 @@
 
         <div class="mt-3">
           <button type="submit" class="btn btn-success">Guardar Occurrence</button>
+          <button type="button" id="btn-clear-all" class="btn btn-sm btn-outline-secondary">Limpiar borradores y vínculos</button>
         </div>
+
       </form>
+
+
+       {{--------------- INICIO DEL PROCESO RECORD LEVEL ---------------------}}
+
+        {{-- MODAL: Record Level --}}
+        <div class="modal fade" id="modal-record-level" tabindex="-1" aria-hidden="true"> 
+          <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Record level</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+              </div>
+              <div class="modal-body">
+                {{-- Buscar existentes --}}
+                <div class="mb-3">
+                  <input type="text" id="rl-search" class="form-control" placeholder="Buscar por ID o datasetName…">
+                  <div id="rl-results" class="list-group mt-2"></div>
+                </div>
+
+                <hr class="my-3">
+
+                {{-- Crear nuevo (AJAX) --}}
+                <form id="rl-modal-form" action="{{ route('ajax.record-levels.store') }}" method="POST">
+                  @csrf
+                  @include('pages.record-level.partials.form', [
+                    'item'                  => null,
+                    'types'                 => $types,
+                    'licenses'              => $licenses,
+                    'rightsHolders'         => $rightsHolders,
+                    'accessRights'          => $accessRights,
+                    'institutionIds'        => $institutionIds,
+                    'collectionIds'         => $collectionIds,
+                    'institutionCodes'      => $institutionCodes,
+                    'collectionCodes'       => $collectionCodes,
+                    'ownerInstitutionCodes' => $ownerInstitutionCodes,
+                    'basisOfRecords'        => $basisOfRecords,
+                  ])
+                  <div class="text-end mt-3">
+                    <button type="submit" class="btn btn-primary">Guardar y usar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        @push('scripts')
+        <script>
+        (function () {
+          const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+          // Plantillas de rutas para Ver/Editar (resource web)
+          const rlShowTpl = @json(route('record-level.show', '__ID__'));
+          const rlEditTpl = @json(route('record-level.edit', '__ID__'));
+
+          // Toast helper
+          function showToast(message, variant = 'success') {
+            const area = document.getElementById('toast-area');
+            if (!area || !window.bootstrap) { alert(message); return; }
+
+            const el = document.createElement('div');
+            el.className = `toast align-items-center text-bg-${variant} border-0`;
+            el.setAttribute('role','alert');
+            el.setAttribute('aria-live','assertive');
+            el.setAttribute('aria-atomic','true');
+            el.innerHTML = `
+              <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+              </div>`;
+            area.appendChild(el);
+
+            const t = new bootstrap.Toast(el, { delay: 2500, autohide: true });
+            t.show();
+            el.addEventListener('hidden.bs.toast', () => el.remove());
+          }
+
+          // Cerrar modal (robusto)
+          function closeModalById(id) {
+            const el = document.getElementById(id);
+            if (!el) { console.warn('Modal no encontrada:', id); return; }
+
+            let inst = window.bootstrap?.Modal.getInstance(el);
+            if (!inst) inst = window.bootstrap?.Modal.getOrCreateInstance(el);
+
+            if (inst) {
+              inst.hide();
+            } else {
+              el.classList.remove('show');
+              el.style.display = 'none';
+              document.body.classList.remove('modal-open');
+              document.body.style.removeProperty('padding-right');
+              document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+            }
+          }
+
+          // Enlaza/visibiliza los links Ver/Editar según el ID actual
+          function updateRlLinks(id) {
+            const $actions = document.getElementById('rl-actions');
+            const $view    = document.getElementById('rl-view');
+            const $edit    = document.getElementById('rl-edit');
+
+            if (id && $actions && $view && $edit) {
+              $view.href = rlShowTpl.replace('__ID__', encodeURIComponent(id));
+              $edit.href = rlEditTpl.replace('__ID__', encodeURIComponent(id));
+              $actions.style.display = 'flex';
+            } else if ($actions) {
+              $actions.style.display = 'none';
+            }
+          }
+
+          // Aplica id/label en el form principal, actualiza links y cierra modal
+          function applyRecordLevel(id, label) {
+            document.getElementById('record_level_id').value = id;
+            const $label = document.getElementById('record_level_label');
+            if ($label) $label.value = label || ('#'+id);
+            const $sum = document.getElementById('summary-rl');
+            if ($sum) $sum.textContent = label || ('#'+id);
+
+            updateRlLinks(id);
+            closeModalById('modal-record-level');
+
+            // Persistencia opcional (autosave wizard)
+            try {
+              const draft = JSON.parse(localStorage.getItem('occ_wizard_occurrence_v2') || '{}');
+              draft['record_level_id'] = id;
+              localStorage.setItem('occ_wizard_occurrence_v2', JSON.stringify(draft));
+
+              const links = JSON.parse(localStorage.getItem('occ_wizard_links_v2') || '{}');
+              links['record_level'] = { id, label: label || ('#'+id) };
+              localStorage.setItem('occ_wizard_links_v2', JSON.stringify(links));
+            } catch {}
+          }
+
+          // Submit AJAX del formulario dentro de la modal
+          const rlForm = document.getElementById('rl-modal-form');
+          if (!rlForm) return;
+
+          const submitBtn = rlForm.querySelector('button[type="submit"]');
+
+          rlForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const originalHTML = submitBtn?.innerHTML;
+            submitBtn?.setAttribute('disabled', 'disabled');
+            if (submitBtn) submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Guardando...`;
+
+            try {
+              const res = await fetch(rlForm.action, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                  'X-CSRF-TOKEN': csrf,
+                  'X-Requested-With': 'XMLHttpRequest',
+                  'Accept': 'application/json'
+                },
+                body: new FormData(rlForm)
+              });
+
+              if (!res.ok) {
+                let msg = 'Error al guardar';
+                try { const j = await res.json(); if (j?.message) msg = j.message; } catch {}
+                showToast(msg, 'danger');
+                return;
+              }
+
+              const data = await res.json(); // { id, label? }
+              applyRecordLevel(data.id, data.label);
+              showToast('Record level guardado y asignado ✅', 'success');
+
+            } catch (err) {
+              showToast('Error de red o servidor.', 'danger');
+            } finally {
+              if (submitBtn) {
+                submitBtn.innerHTML = originalHTML || 'Guardar y usar';
+                submitBtn.removeAttribute('disabled');
+              }
+            }
+          });
+
+          // Buscador de existentes en la modal
+          const $q = document.getElementById('rl-search');
+          const $results = document.getElementById('rl-results');
+          function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+
+          if ($q && $results) {
+            const doSearch = debounce(async () => {
+              const q = $q.value.trim();
+              if (q.length < 2) { $results.innerHTML = ''; return; }
+
+              const url = @json(route('ajax.record-levels.search')) + '?q=' + encodeURIComponent(q);
+              const res = await fetch(url, { headers:{ 'Accept':'application/json' }, credentials:'same-origin' });
+              const items = res.ok ? await res.json() : [];
+
+              $results.innerHTML = items.length
+                ? items.map(i =>
+                  `<button type="button" class="list-group-item list-group-item-action"
+                          data-id="${i.id}" data-label="${i.text}">
+                    ${i.text} 
+                  </button>`).join('')
+                : '<div class="list-group-item text-muted">Sin resultados</div>';
+            }, 300);
+
+            $q.addEventListener('input', doSearch);
+
+            $results.addEventListener('click', (e) => {
+              const btn = e.target.closest('.list-group-item');
+              if (!btn) return;
+              applyRecordLevel(btn.dataset.id, btn.dataset.label);
+              showToast('Record level asignado ✅');
+            });
+          }
+
+          // Estado inicial: si ya había uno seleccionado, mostrar acciones Ver/Editar
+          document.addEventListener('DOMContentLoaded', () => {
+            const current = document.getElementById('record_level_id')?.value;
+            if (current) updateRlLinks(current);
+          });
+        })();
+        </script>
+        @endpush
+
+
+        {{--------------- FIN DEL PROCESO ---------------------}}
+
+        {{--------------- INICIO DEL PROCESO ORGANISM ---------------------}}
+
+        <div class="modal fade" id="modal-organism" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Organism — Buscar / Crear</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+              </div>
+
+              <div class="modal-body">
+                {{-- Buscador --}}
+                <div class="mb-3">
+                  <label class="label">Buscar Organism</label>
+                  <input type="text" id="org-search" class="form-control" placeholder="ID, occurrences, organisms, identifications...">
+                  <div id="org-results" class="list-group mt-2"></div>
+                </div>
+
+                <hr class="my-3">
+
+                {{-- Form de creación/edición rápida --}}
+                <form id="org-modal-form" action="{{ route('ajax.organisms.store') }}" method="POST">
+                  @csrf
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="label" for="org_organismID">Organism ID (vacío = se genera)</label>
+                      <input type="text" name="organismID" id="org_organismID" class="form-control">
+                    </div>
+                    <div class="col-12">
+                      <label class="label" for="org_associatedOccurrences">Associated Occurrences</label>
+                      <textarea name="associatedOccurrences" id="org_associatedOccurrences" rows="2" class="form-control"></textarea>
+                    </div>
+                    <div class="col-12">
+                      <label class="label" for="org_associatedOrganisms">Associated Organisms</label>
+                      <textarea name="associatedOrganisms" id="org_associatedOrganisms" rows="2" class="form-control"></textarea>
+                    </div>
+                    <div class="col-12">
+                      <label class="label" for="org_previousIdentifications">Previous Identifications</label>
+                      <textarea name="previousIdentifications" id="org_previousIdentifications" rows="2" class="form-control"></textarea>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Guardar y usar</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  </div>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        </div>
+        @push('scripts')
+          <script>
+          (function () {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+            // Rutas Ver/Editar
+            const orgShowTpl = @json(route('organism.show', '__ID__'));
+            const orgEditTpl = @json(route('organism.edit', '__ID__'));
+
+            // Helpers
+            function showToast(message, variant = 'success') {
+              const area = document.getElementById('toast-area');
+              if (!area || !window.bootstrap) { alert(message); return; }
+              const el = document.createElement('div');
+              el.className = `toast align-items-center text-bg-${variant} border-0`;
+              el.setAttribute('role','alert');
+              el.setAttribute('aria-live','assertive');
+              el.setAttribute('aria-atomic','true');
+              el.innerHTML = `
+                <div class="d-flex">
+                  <div class="toast-body">${message}</div>
+                  <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>`;
+              area.appendChild(el);
+              const t = new bootstrap.Toast(el, { delay: 2500, autohide: true });
+              t.show();
+              el.addEventListener('hidden.bs.toast', () => el.remove());
+            }
+
+            function closeModalById(id) {
+              const el = document.getElementById(id);
+              if (!el) return;
+              let inst = window.bootstrap?.Modal.getInstance(el) || window.bootstrap?.Modal.getOrCreateInstance(el);
+              if (inst) inst.hide();
+              else {
+                el.classList.remove('show'); el.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('padding-right');
+                document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+              }
+            }
+
+            function updateOrgLinks(id) {
+              const $actions = document.getElementById('org-actions');
+              const $view    = document.getElementById('org-view');
+              const $edit    = document.getElementById('org-edit');
+
+              if (id && $actions && $view && $edit) {
+                $view.href = orgShowTpl.replace('__ID__', encodeURIComponent(id));
+                $edit.href = orgEditTpl.replace('__ID__', encodeURIComponent(id));
+                $actions.style.display = 'flex';
+              } else if ($actions) {
+                $actions.style.display = 'none';
+              }
+            }
+
+            function applyOrganism(id, label) {
+              document.getElementById('organismID').value = id;
+              const $label = document.getElementById('organism_label');
+              if ($label) $label.value = label || id;
+              const $sum = document.getElementById('summary-org');
+              if ($sum) $sum.textContent = label || id;
+
+              updateOrgLinks(id);
+              closeModalById('modal-organism');
+              showToast('Organism guardado/asignado ✅', 'success');
+
+              // Persistencia opcional (si usas autosave del wizard)
+              try {
+                const draft = JSON.parse(localStorage.getItem('occ_wizard_occurrence_v2') || '{}');
+                draft['organismID'] = id;
+                localStorage.setItem('occ_wizard_occurrence_v2', JSON.stringify(draft));
+
+                const links = JSON.parse(localStorage.getItem('occ_wizard_links_v2') || '{}');
+                links['organism'] = { id, label: label || id };
+                localStorage.setItem('occ_wizard_links_v2', JSON.stringify(links));
+              } catch {}
+            }
+
+            // Submit AJAX del form en la modal
+            const orgForm   = document.getElementById('org-modal-form');
+            const submitBtn = orgForm?.querySelector('button[type="submit"]');
+
+            orgForm?.addEventListener('submit', async function (e) {
+              e.preventDefault();
+
+              const originalHTML = submitBtn?.innerHTML;
+              submitBtn?.setAttribute('disabled','disabled');
+              if (submitBtn) submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Guardando...`;
+
+              try {
+                const res = await fetch(orgForm.action, {
+                  method: 'POST',
+                  credentials: 'same-origin',
+                  headers: {
+                    'X-CSRF-TOKEN': csrf,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                  },
+                  body: new FormData(orgForm)
+                });
+
+                if (!res.ok) {
+                  let msg = 'Error al guardar';
+                  try { const j = await res.json(); if (j?.message) msg = j.message; } catch {}
+                  showToast(msg, 'danger');
+                  return;
+                }
+
+                const data = await res.json(); // { id, label }
+                applyOrganism(data.id, data.label);
+
+              } catch (err) {
+                showToast('Error de red o servidor.', 'danger');
+              } finally {
+                if (submitBtn) {
+                  submitBtn.innerHTML = originalHTML || 'Guardar y usar';
+                  submitBtn.removeAttribute('disabled');
+                }
+              }
+            });
+
+            // Buscador en la modal
+            const $q = document.getElementById('org-search');
+            const $results = document.getElementById('org-results');
+
+            function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+
+            if ($q && $results) {
+              const doSearch = debounce(async () => {
+                const q = $q.value.trim();
+                if (q.length < 2) { $results.innerHTML = ''; return; }
+
+                const url = @json(route('ajax.organisms.search')) + '?q=' + encodeURIComponent(q);
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials:'same-origin' });
+                const items = res.ok ? await res.json() : [];
+
+                $results.innerHTML = (items && items.length && items[0].id !== '')
+                  ? items.map(i => `
+                      <button type="button" class="list-group-item list-group-item-action"
+                              data-id="${i.id}" data-label="${i.text}">
+                        ${i.text}
+                      </button>`).join('')
+                  : '<div class="list-group-item text-muted">Sin resultados</div>';
+              }, 300);
+
+              $q.addEventListener('input', doSearch);
+
+              $results.addEventListener('click', (e) => {
+                const btn = e.target.closest('.list-group-item');
+                if (!btn) return;
+                applyOrganism(btn.dataset.id, btn.dataset.label);
+                showToast('Organism asignado ✅');
+              });
+            }
+
+            // Estado inicial: si ya existe organismID, mostrar acciones
+            document.addEventListener('DOMContentLoaded', () => {
+              const current = document.getElementById('organismID')?.value;
+              if (current) updateOrgLinks(current);
+            });
+          })();
+          </script>
+        @endpush
+
+
+         {{--------------- FIN DEL PROCESO ---------------------}}
+
+
+
     </div>
 
     {{-- ============ TAB 2: RECORD LEVEL (FORM PROPIO) ============ --}}
@@ -377,7 +877,7 @@
       e.preventDefault(); // <-- evita refresco
       postForm(rlForm, rlForm.action, function (id, data) {
         setHiddenAndSummary('record_level_id', id, 'summary-rl', data.label || ('#'+id));
-        alert('Record level guardado y asignado: ' + id);
+        alert('Record level guardado y asignado 2: ' + id);
         showTabOccurrence();
       });
     });
@@ -561,10 +1061,10 @@
     form.addEventListener('change', save);
 
     // Si el form envía (sea AJAX o clásico), limpiamos ese draft
-    form.addEventListener('submit', () => {
+    /* form.addEventListener('submit', () => {
       localStorage.removeItem(storageKey);
       dirty = false;
-    });
+    }); */
   }
 
   // Registrar autosave para TODOS los tabs
@@ -609,17 +1109,17 @@
   }
 
   // Record level
-  const rlForm = document.getElementById('rl-form');
+/*   const rlForm = document.getElementById('rl-form');
   if (rlForm) rlForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     await postForm(rlForm, ({id, label}) => {
       setLink('record_level', id, label || ('#'+id));
-      alert('Record level guardado y asignado: '+id);
+      alert('Record level guardado y asignado 1: '+id);
       // Volver al tab Occurrence
       const trigger = document.querySelector('[data-bs-target="#tab-occurrence"], a[href="#tab-occurrence"]');
       if (trigger && window.bootstrap?.Tab) new bootstrap.Tab(trigger).show();
     });
-  });
+  }); */
 
   // Organism
   const orgForm = document.getElementById('organism-form');
@@ -686,7 +1186,23 @@
     }
   });
 
+  document.getElementById('btn-clear-all')?.addEventListener('click', () => {
+    [KEY_OCC,KEY_RL,KEY_ORG,KEY_LOC,KEY_TAX,KEY_ID,KEY_LINKS].forEach(k => localStorage.removeItem(k));
+    ['record_level_id','organismID','locationID','taxonID','identificationID'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    ['summary-rl','summary-org','summary-loc','summary-tax','summary-id'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.textContent = '—';
+    });
+    
+    // Evita el beforeunload y recarga
+    dirty = false;                     // <— importante
+    window.location.reload();          // <— recarga la página
+  });
+
+
 })();
+
 </script>
 @endpush
 
