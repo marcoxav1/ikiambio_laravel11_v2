@@ -138,12 +138,12 @@
           <button type="button" class="btn btn-outline-primary"
                   data-bs-toggle="modal" data-bs-target="#modal-location">
             Elegir / Crear
-          </button>
-        </div>
+          </button>&nbsp;
+          <div id="loc-actions" class="mt-1" style="display:none">
+            <a id="loc-view" class="btn btn-link p-2" target="_blank" rel="noopener noreferrer">Ver</a>
+            <a id="loc-edit" class="btn btn-link p-2" target="_blank" rel="noopener noreferrer">Editar</a>
+          </div>
 
-        <div id="loc-actions" class="mt-1 d-flex gap-3" style="display:none">
-          <a id="loc-view" class="btn btn-link p-0" target="_blank" rel="noopener noreferrer">Ver</a>
-          <a id="loc-edit" class="btn btn-link p-0" target="_blank" rel="noopener noreferrer">Editar</a>
         </div>
 
         <small id="summary-loc" class="text-muted d-block mt-1">—</small>
