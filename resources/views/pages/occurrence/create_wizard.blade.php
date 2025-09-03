@@ -149,6 +149,31 @@
         <small id="summary-loc" class="text-muted d-block mt-1">—</small>
 
 
+        {{-- TAXON: hidden + label + botón modal + acciones --}}
+        <input type="hidden" name="taxonID" id="taxonID"
+              value="{{ old('taxonID', $item->taxonID ?? '') }}">
+
+        <label class="label d-block">Taxon</label>
+        <div class="input-group align-items-center">
+          <input type="text" id="taxon_label" class="form-control"
+                placeholder="Selecciona o crea un Taxon"
+                value="{{ isset($item->taxonID) ? $item->taxonID : '' }}"
+                readonly>
+
+          <button type="button" class="btn btn-outline-primary"
+                  data-bs-toggle="modal" data-bs-target="#modal-taxon">
+            Elegir / Crear
+          </button>&nbsp;
+          <div id="tax-actions" class="mt-1" style="display:none">
+            <a id="tax-view" class="btn btn-link p-2" target="_blank" rel="noopener noreferrer">Ver</a>
+            <a id="tax-edit" class="btn btn-link p-2" target="_blank" rel="noopener noreferrer">Editar</a>
+          </div>
+
+        </div>
+
+        <small id="summary-tax" class="text-muted d-block mt-1">—</small>
+
+
 
         {{-- ===== Campos propios de OCCURRENCE ===== --}}
         <div class="row g-3">
@@ -972,6 +997,258 @@
 
       {{--------------- FIN DEL PROCESO ---------------------}}
 
+      {{--------------- INICIO DEL PROCESO LOCATION ---------------------}}
+
+        <div class="modal fade" id="modal-taxon" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Taxon — Buscar / Crear</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+              </div>
+
+              <div class="modal-body">
+
+                {{-- Buscador --}}
+                <div class="mb-3">
+                  <label class="label">Buscar Taxon</label>
+                  <input type="text" id="tax-search" class="form-control" placeholder="ID, scientificName, genus, family, kingdom…">
+                  <div id="tax-results" class="list-group mt-2"></div>
+                </div>
+
+                <hr class="my-3">
+
+                {{-- Form AJAX de creación/edición rápida --}}
+                <form id="tax-modal-form" action="{{ route('ajax.taxa.store') }}" method="POST">
+                  @csrf
+
+                  @if (View::exists('pages.taxon.partials.form'))
+                    {{-- Reutiliza tu partial completo (todos los campos) --}}
+                    @include('pages.taxon.partials.form', [
+                      'item' => null,
+                      'idPrefix' => 'mt_',
+                      // si tu partial requiere $taxonRanks, $taxStatuses deben venir del controlador
+                    ])
+                  @else
+                    {{-- Versión mínima si no tienes partial --}}
+                    <div class="row g-3">
+                      <div class="col-md-4">
+                        <label class="label" for="mt_taxonID">Taxon ID (vacío = auto)</label>
+                        <input type="text" name="taxonID" id="mt_taxonID" class="form-control">
+                      </div>
+                      <div class="col-md-8">
+                        <label class="label" for="mt_scientificName">Scientific name *</label>
+                        <input type="text" name="scientificName" id="mt_scientificName" class="form-control" required>
+                      </div>
+
+                      <div class="col-md-4">
+                        <label class="label" for="mt_taxonRank">Taxon rank</label>
+                        <select name="taxonRank" id="mt_taxonRank" class="form-control">
+                          <option value="">— Selecciona —</option>
+                          @foreach($taxonRanks as $opt) {{-- taxonRank_id, taxonRank_value --}}
+                            <option value="{{ $opt->taxonRank_id }}">{{ $opt->taxonRank_value }}</option>
+                          @endforeach
+                        </select>
+                      </div>
+                      <div class="col-md-4">
+                        <label class="label" for="mt_taxonomicStatus">Taxonomic status</label>
+                        <select name="taxonomicStatus" id="mt_taxonomicStatus" class="form-control">
+                          <option value="">— Selecciona —</option>
+                          @foreach($taxStatuses as $opt) {{-- taxonomicStatus_id, taxonomicStatus_value --}}
+                            <option value="{{ $opt->taxonomicStatus_id }}">{{ $opt->taxonomicStatus_value }}</option>
+                          @endforeach
+                        </select>
+                      </div>
+
+                      <div class="col-md-4">
+                        <label class="label" for="mt_genus">Genus</label>
+                        <input type="text" name="genus" id="mt_genus" class="form-control">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="label" for="mt_family">Family</label>
+                        <input type="text" name="family" id="mt_family" class="form-control">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="label" for="mt_kingdom">Kingdom</label>
+                        <input type="text" name="kingdom" id="mt_kingdom" class="form-control">
+                      </div>
+                    </div>
+                  @endif
+
+                  <div class="mt-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Guardar y usar</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  </div>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        </div>
+        @push('scripts')
+        <script>
+        (function () {
+          const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+          // Rutas Ver/Editar
+          const taxShowTpl = @json(route('taxon.show', '__ID__'));
+          const taxEditTpl = @json(route('taxon.edit', '__ID__'));
+
+          function showToastTaxon(message, variant = 'success') {
+            const area = document.getElementById('toast-area');
+            if (!area || !window.bootstrap) { alert(message); return; }
+            const el = document.createElement('div');
+            el.className = `toast align-items-center text-bg-${variant} border-0`;
+            el.setAttribute('role','alert');
+            el.setAttribute('aria-live','assertive');
+            el.setAttribute('aria-atomic','true');
+            el.innerHTML = `
+              <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+              </div>`;
+            area.appendChild(el);
+            const t = new bootstrap.Toast(el, { delay: 2500, autohide: true });
+            t.show();
+            el.addEventListener('hidden.bs.toast', () => el.remove());
+          }
+
+          function closeTaxonModal() {
+            const el = document.getElementById('modal-taxon');
+            if (!el) return;
+            let inst = window.bootstrap?.Modal.getInstance(el) || window.bootstrap?.Modal.getOrCreateInstance(el);
+            if (inst) inst.hide(); else {
+              el.classList.remove('show'); el.style.display = 'none';
+              document.body.classList.remove('modal-open');
+              document.body.style.removeProperty('padding-right');
+              document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+            }
+          }
+
+          function updateTaxLinks(id) {
+            const box = document.getElementById('tax-actions');
+            const v = document.getElementById('tax-view');
+            const e = document.getElementById('tax-edit');
+            if (box && v && e && id) {
+              v.href = taxShowTpl.replace('__ID__', encodeURIComponent(id));
+              e.href = taxEditTpl.replace('__ID__', encodeURIComponent(id));
+              box.style.display = 'flex';
+            } else if (box) {
+              box.style.display = 'none';
+            }
+          }
+
+          function applyTaxon(id, label) {
+            document.getElementById('taxonID').value = id;
+            const $label = document.getElementById('taxon_label');
+            if ($label) $label.value = label || id;
+            const $sum = document.getElementById('summary-tax');
+            if ($sum) $sum.textContent = label || id;
+
+            updateTaxLinks(id);
+            closeTaxonModal();
+            showToastTaxon('Taxon guardado/asignado ✅','success');
+
+            // Persistencia opcional
+            try {
+              const draft = JSON.parse(localStorage.getItem('occ_wizard_occurrence_v2') || '{}');
+              draft['taxonID'] = id;
+              localStorage.setItem('occ_wizard_occurrence_v2', JSON.stringify(draft));
+
+              const links = JSON.parse(localStorage.getItem('occ_wizard_links_v2') || '{}');
+              links['taxon'] = { id, label: label || id };
+              localStorage.setItem('occ_wizard_links_v2', JSON.stringify(links));
+            } catch {}
+          }
+
+          // Submit AJAX del form de la modal
+          const taxForm = document.getElementById('tax-modal-form');
+          const submitBtn = taxForm?.querySelector('button[type="submit"]');
+
+          taxForm?.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const original = submitBtn?.innerHTML;
+            submitBtn?.setAttribute('disabled','disabled');
+            if (submitBtn) submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Guardando...`;
+
+            try {
+              const res = await fetch(taxForm.action, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                  'X-CSRF-TOKEN': csrf,
+                  'X-Requested-With': 'XMLHttpRequest',
+                  'Accept': 'application/json'
+                },
+                body: new FormData(taxForm)
+              });
+
+              if (!res.ok) {
+                let msg = 'Error al guardar';
+                try { const j = await res.json(); if (j?.message) msg = j.message; } catch {}
+                showToastTaxon(msg,'danger');
+                return;
+              }
+
+              const data = await res.json(); // { id, label }
+              applyTaxon(data.id, data.label);
+
+            } catch (err) {
+              showToastTaxon('Error de red o servidor.','danger');
+            } finally {
+              if (submitBtn) {
+                submitBtn.innerHTML = original || 'Guardar y usar';
+                submitBtn.removeAttribute('disabled');
+              }
+            }
+          });
+
+          // Buscador
+          const $q = document.getElementById('tax-search');
+          const $results = document.getElementById('tax-results');
+          function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+
+          if ($q && $results) {
+            const doSearch = debounce(async () => {
+              const q = $q.value.trim();
+              if (q.length < 2) { $results.innerHTML = ''; return; }
+
+              const url = @json(route('ajax.taxa.search')) + '?q=' + encodeURIComponent(q);
+              const res = await fetch(url, { headers:{'Accept':'application/json'}, credentials:'same-origin' });
+              const items = res.ok ? await res.json() : [];
+
+              $results.innerHTML = (items && items.length && items[0].id !== '')
+                ? items.map(i => `
+                    <button type="button" class="list-group-item list-group-item-action"
+                            data-id="${i.id}" data-label="${i.text}">
+                      ${i.text}
+                    </button>`).join('')
+                : '<div class="list-group-item text-muted">Sin resultados</div>';
+            }, 300);
+
+            $q.addEventListener('input', doSearch);
+
+            $results.addEventListener('click', (e) => {
+              const btn = e.target.closest('.list-group-item');
+              if (!btn) return;
+              applyTaxon(btn.dataset.id, btn.dataset.label);
+              showToastTaxon('Taxon asignado ✅');
+            });
+          }
+
+          // Estado inicial (si ya hay taxonID)
+          document.addEventListener('DOMContentLoaded', () => {
+            const current = document.getElementById('taxonID')?.value;
+            if (current) updateTaxLinks(current);
+          });
+        })();
+        </script>
+        @endpush
+
+
+
+      {{--------------- FIN DEL PROCESO ---------------------}}  
+
       {{---------- INICIO DE SCRIPTS PARA POBLAR LOS COMBOS CON DATA DE LOCALSTORAGE -------}}  
       
       @push('scripts')
@@ -1011,6 +1288,16 @@
             linkKey:  'location',
             makeFallbackLabel: id => id
           },
+          {
+            kind: 'taxon',
+            hiddenId: 'taxonID',
+            labelId:  'taxon_label',
+            summaryId:'summary-tax',
+            draftKey: 'taxonID',
+            linkKey:  'taxon',
+            makeFallbackLabel: id => id
+          }
+
           // Si luego agregas Taxon / Identification:
           // { kind:'taxon', hiddenId:'taxonID', labelId:'taxon_label', summaryId:'summary-tax', draftKey:'taxonID', linkKey:'taxon', makeFallbackLabel:id=>id },
           // { kind:'identification', hiddenId:'identificationID', labelId:'identification_label', summaryId:'summary-id', draftKey:'identificationID', linkKey:'identification', makeFallbackLabel:id=>id },
