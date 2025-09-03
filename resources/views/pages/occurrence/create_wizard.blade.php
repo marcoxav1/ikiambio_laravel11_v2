@@ -586,7 +586,7 @@
                       'idPrefix' => 'ml_'
                   ])
 
-                  <div class="mt-3 d-flex gap-2">----
+                  <div class="mt-3 d-flex gap-2">
                     <button type="submit" class="btn btn-primary">Guardar y usar</button>
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                   </div>
@@ -973,6 +973,104 @@
         @endpush
 
       {{--------------- FIN DEL PROCESO ---------------------}}
+
+      {{---------- INICIO DE SCRIPTS PARA POBLAR LOS COMBOS CON DATA DE LOCALSTORAGE -------}}  
+      
+      @push('scripts')
+      <script>
+      (function () {
+        // Claves usadas para guardar borradores y “selecciones vinculadas”
+        const DRAFT_KEY = 'occ_wizard_occurrence_v2';
+        const LINKS_KEY = 'occ_wizard_links_v2';
+
+        // Mapea cada “pieza” a sus IDs de input (hidden + visible label) y a claves en storage
+        const FIELDS = [
+          {
+            kind: 'record_level',
+            hiddenId: 'record_level_id',
+            labelId:  'record_level_label',
+            summaryId:'summary-rl',
+            // Cómo se llama en draft (autosave) y en links (selección)
+            draftKey: 'record_level_id',
+            linkKey:  'record_level',
+            makeFallbackLabel: id => '#'+id
+          },
+          {
+            kind: 'organism',
+            hiddenId: 'organismID',
+            labelId:  'organism_label',
+            summaryId:'summary-org',
+            draftKey: 'organismID',
+            linkKey:  'organism',
+            makeFallbackLabel: id => id
+          },
+          {
+            kind: 'location',
+            hiddenId: 'locationID',
+            labelId:  'location_label',
+            summaryId:'summary-loc',
+            draftKey: 'locationID',
+            linkKey:  'location',
+            makeFallbackLabel: id => id
+          },
+          // Si luego agregas Taxon / Identification:
+          // { kind:'taxon', hiddenId:'taxonID', labelId:'taxon_label', summaryId:'summary-tax', draftKey:'taxonID', linkKey:'taxon', makeFallbackLabel:id=>id },
+          // { kind:'identification', hiddenId:'identificationID', labelId:'identification_label', summaryId:'summary-id', draftKey:'identificationID', linkKey:'identification', makeFallbackLabel:id=>id },
+        ];
+
+        function getEl(id){ return document.getElementById(id); }
+        function setVal(id, v){ const el=getEl(id); if(el) el.value=(v??''); }
+        function setTxt(id, t){ const el=getEl(id); if(el) el.textContent=(t??'—'); }
+
+        function rehydrate() {
+          let draft={}, links={};
+          try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}'); } catch {}
+          try { links = JSON.parse(localStorage.getItem(LINKS_KEY) || '{}'); } catch {}
+
+          FIELDS.forEach(cfg => {
+            const hiddenEl = getEl(cfg.hiddenId);
+            const labelEl  = getEl(cfg.labelId);
+
+            // 1) Si ya hay valor en el input hidden, lo respetamos y fabricamos un label si falta
+            let id = hiddenEl?.value?.trim() || '';
+
+            // 2) Si no hay id en el input, intentamos desde links (tiene {id,label})
+            if (!id && links[cfg.linkKey]?.id) {
+              id = (links[cfg.linkKey].id || '').trim();
+            }
+
+            // 3) Si todavía no hay id, probamos en draft (autosave)
+            if (!id && draft[cfg.draftKey]) {
+              id = (''+draft[cfg.draftKey]).trim();
+            }
+
+            // Si conseguimos un ID, calculamos el label (links trae label; si no, fabricamos)
+            if (id) {
+              const storedLabel = (links[cfg.linkKey]?.label || '').trim();
+              const label = storedLabel || cfg.makeFallbackLabel(id);
+
+              setVal(cfg.hiddenId, id);
+              setVal(cfg.labelId, label);
+              setTxt(cfg.summaryId, label);
+            } else {
+              // No hay nada que mostrar
+              setVal(cfg.hiddenId, '');
+              setVal(cfg.labelId, '');
+              setTxt(cfg.summaryId, '—');
+            }
+          });
+        }
+
+        // Ejecuta al cargar el DOM
+        document.addEventListener('DOMContentLoaded', rehydrate);
+        // Fallback por si el DOMContentLoaded se dispara antes de que tus inputs existan
+        window.addEventListener('load', rehydrate);
+      })();
+      </script>
+      @endpush
+
+
+    {{---------- FIN DE SCRIPTS PARA POBLAR LOS COMBOS CON DATA DE LOCALSTORAGE -------}}    
 
 
 
