@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
 
 // ===== Vocabs para OCCURRENCE =====
 use App\Models\Vocab\Occurrence\Organismquantitytype;
@@ -121,6 +123,9 @@ class OccurrenceController extends Controller
         // Catálogos para Identification
         $idTypeStatuses  = TypeStatus::orderBy('typeStatus_value')->get(['vocab_identification_typeStatus_id','typeStatus_value']);
         $idVerifStatuses = VerificationStatus::orderBy('identificationVerificationStatus_value')->get(['vocab_identification_verificationStatus_id','identificationVerificationStatus_value']);
+        $typeStatuses = TypeStatus::orderBy('typeStatus_value')->get(['vocab_identification_typeStatus_id','typeStatus_value']);
+        $verificationStatuses = VerificationStatus::orderBy('identificationVerificationStatus_value')->get(['vocab_identification_verificationStatus_id','identificationVerificationStatus_value']);
+
 
         $recordLevels = RecordLevel::orderByDesc('record_level_id')
             ->limit(50)
@@ -136,7 +141,7 @@ class OccurrenceController extends Controller
             // Taxon vocabs...
             'taxonRanks','taxonomicStatuses',
             // Identification vocabs...
-            'idTypeStatuses','idVerifStatuses',
+            'idTypeStatuses','idVerifStatuses','typeStatuses','verificationStatuses',
             // >>> añade esto <<<
             'recordLevels'
         ));
@@ -144,20 +149,62 @@ class OccurrenceController extends Controller
 
     public function store(Request $request)
     {
-        $data = $this->validated($request); // tu validación actual (puedes dejar estos 4 como 'nullable|string')
+        // 1) VALIDACIÓN
+        $data = $request->validate([
+            // Uniques / IDs externos
+            'occurrenceID'       => ['required','string','max:255','unique:occurrence,occurrenceID'],
+            'catalogNumber'      => ['required','string','max:255','unique:occurrence,catalogNumber'],
 
-        DB::transaction(function () use (&$data) {
-            // 1) crear/reusar relacionados
-            $data['organismID']       = $this->upsertOrganism($data['organismID'] ?? null);
-            $data['locationID']       = $this->upsertLocation($data['locationID'] ?? null);
-            $data['taxonID']          = $this->upsertTaxon($data['taxonID'] ?? null);
-            $data['identificationID'] = $this->upsertIdentification($data['identificationID'] ?? null);
+            // FKs 1–1 y referencias externas (pueden ser null si en tu modelo lo permites)
+            /* 'record_level_id'    => ['required','integer', Rule::exists('record_level','record_level_id')], */
+            'record_level_id'    => ['required','integer', 'unique:occurrence,record_level_id',Rule::exists('record_level','record_level_id')],
+            'identificationID'   => ['required','string','max:255','unique:occurrence,identificationID', Rule::exists('identification','identificationID')],
 
-            // 2) crear occurrence
-            \App\Models\Occurrence::create($data);
-        });
+            'organismID'         => ['required','string','max:255', Rule::exists('organism','organismID')],
+            'locationID'         => ['required','string','max:255', Rule::exists('location','locationID')],
+            'taxonID'            => ['required','string','max:255', Rule::exists('taxon','taxonID')],
+            'identificationID'   => ['required','string','max:255','unique:occurrence,identificationID', Rule::exists('identification','identificationID')],
+            
+            // Requeridos de vocab
+            'organismQuantityType' => ['required','integer', Rule::exists('vocab_occurrence_organismQuantityType','oqtype_id')],
+            'sex'                   => ['required','integer', Rule::exists('vocab_occurrence_sex','sex_id')],
+            'lifeStage'             => ['required','integer', Rule::exists('vocab_occurrence_lifeStage','lifestage_id')],
+            'reproductiveCondition' => ['required','integer', Rule::exists('vocab_occurrence_reproductiveCondition','reprocond_id')],
+            'establishmentMeans'    => ['required','integer', Rule::exists('vocab_occurrence_establishmentMeans','estabmeans_id')],
+            'disposition'           => ['required','integer', Rule::exists('vocab_occurrence_disposition','disposition_id')],
 
-        return redirect()->route('occurrence.index')->with('ok','Creado');
+            // Otros campos
+            'recordNumber'        => ['required','string','max:255'],
+            'recordedBy'          => ['required','string','max:255'],
+            'individualCount'     => ['required','integer'],
+            'organismQuantity'    => ['required','numeric'],
+            'behavior'            => ['required','string'],
+            'substrate'           => ['required','string'],
+            'preparations'        => ['required','string'],
+            'associatedMedia'     => ['required','string'],
+            'associatedSequences' => ['required','string'],
+            'associatedTaxa'      => ['required','string'],
+            'otherCatalogNumbers' => ['required','string'],
+            'occurrenceRemarks'   => ['required','string'],
+        ], [
+            // Mensajes personalizados (ejemplos)
+            'organismQuantityType.required' => 'El tipo de cantidad del organismo es obligatorio.',
+            'sex.required'                  => 'El campo Sex es obligatorio.',
+            'lifeStage.required'            => 'El campo Life stage es obligatorio.',
+            // ...
+        ]);
+
+        try {
+            DB::transaction(function () use ($data) {
+                \App\Models\Occurrence::create($data);
+            });
+
+            return redirect()->route('occurrence.index')->with('ok','Occurrence creado correctamente');
+        } catch (QueryException $e) {
+            Log::error('Error al guardar Occurrence', ['error' => $e->getMessage()]);
+            return back()->withErrors('No se pudo guardar la Occurrence. Revise los datos o contacte al admin.')
+                        ->withInput();
+        }
     }
 
 
@@ -199,20 +246,50 @@ class OccurrenceController extends Controller
         ));
     }
 
-    public function update(Request $request, Occurrence $occurrence)
+    public function update(Request $request, \App\Models\Occurrence $occurrence)
     {
-        $data = $this->validated($request, $occurrence);
+        $data = $request->validate([
+            'occurrenceID'       => ['required','string','max:255', Rule::unique('occurrence','occurrenceID')->ignore($occurrence->id_occ_bd, 'id_occ_bd')],
+            'catalogNumber'      => ['required','string','max:255', Rule::unique('occurrence','catalogNumber')->ignore($occurrence->id_occ_bd, 'id_occ_bd')],
+            'record_level_id'    => ['required','integer', Rule::exists('record_level','record_level_id'),
+                                     Rule::unique('occurrence','record_level_id')->ignore($occurrence->id_occ_bd, 'id_occ_bd')],
+            'organismID'         => ['required','string','max:255', Rule::exists('organism','organismID')],
+            'locationID'         => ['required','string','max:255', Rule::exists('location','locationID')],
+            'taxonID'            => ['required','string','max:255', Rule::exists('taxon','taxonID')],
+            'identificationID'   => ['required','string','max:255', Rule::exists('identification','identificationID'),
+                                    Rule::unique('occurrence','identificationID')->ignore($occurrence->id_occ_bd, 'id_occ_bd')],
 
-        DB::transaction(function () use (&$data, $occurrence) {
-            $data['organismID']       = $this->upsertOrganism($data['organismID'] ?? $occurrence->organismID);
-            $data['locationID']       = $this->upsertLocation($data['locationID'] ?? $occurrence->locationID);
-            $data['taxonID']          = $this->upsertTaxon($data['taxonID'] ?? $occurrence->taxonID);
-            $data['identificationID'] = $this->upsertIdentification($data['identificationID'] ?? $occurrence->identificationID);
+            'organismQuantityType' => ['required','integer', Rule::exists('vocab_occurrence_organismQuantityType','oqtype_id')],
+            'sex'                   => ['required','integer', Rule::exists('vocab_occurrence_sex','sex_id')],
+            'lifeStage'             => ['required','integer', Rule::exists('vocab_occurrence_lifeStage','lifestage_id')],
+            'reproductiveCondition' => ['required','integer', Rule::exists('vocab_occurrence_reproductiveCondition','reprocond_id')],
+            'establishmentMeans'    => ['required','integer', Rule::exists('vocab_occurrence_establishmentMeans','estabmeans_id')],
+            'disposition'           => ['required','integer', Rule::exists('vocab_occurrence_disposition','disposition_id')],
 
-            $occurrence->update($data);
-        });
+            'recordNumber'        => ['required','string','max:255'],
+            'recordedBy'          => ['required','string','max:255'],
+            'individualCount'     => ['required','integer'],
+            'organismQuantity'    => ['required','numeric'],
+            'behavior'            => ['required','string'],
+            'substrate'           => ['required','string'],
+            'preparations'        => ['required','string'],
+            'associatedMedia'     => ['required','string'],
+            'associatedSequences' => ['required','string'],
+            'associatedTaxa'      => ['required','string'],
+            'otherCatalogNumbers' => ['required','string'],
+            'occurrenceRemarks'   => ['required','string'],
+        ]);
 
-        return redirect()->route('occurrence.index')->with('ok','Actualizado');
+        try {
+            DB::transaction(function () use ($occurrence, $data) {
+                $occurrence->update($data);
+            });
+
+            return redirect()->route('occurrence.show', $occurrence)->with('ok','Occurrence actualizada');
+        } catch (QueryException $e) {
+            Log::error('Error al actualizar Occurrence', ['error' => $e->getMessage()]);
+            return back()->withErrors('No se pudo actualizar. Revise los datos.')->withInput();
+        }
     }
 
    /*  public function destroy(Occurrence $occurrence)
@@ -293,7 +370,8 @@ class OccurrenceController extends Controller
                 'nullable','string',
                 Rule::unique((new Occurrence)->getTable(), 'occurrenceID')->ignore($id, 'id_occ_bd'),
             ],
-            'record_level_id' => ['nullable','integer', Rule::exists((new RecordLevel)->getTable(),'record_level_id')],
+            /* 'record_level_id' => ['nullable','integer', Rule::exists((new RecordLevel)->getTable(),'record_level_id')], */
+            'record_level_id' => ['nullable','integer', Rule::unique((new RecordLevel)->getTable(),'record_level_id')],
 
             'catalogNumber' => [
                 'nullable','string',
@@ -322,10 +400,18 @@ class OccurrenceController extends Controller
             'otherCatalogNumbers' => ['nullable','string'],
             'occurrenceRemarks'   => ['nullable','string'],
 
-            'organismID'          => ['nullable','string'], // si quieres validar que exista: Rule::exists((new Organism)->getTable(),'organismID')
-            'locationID'          => ['nullable','string'],
-            'taxonID'             => ['nullable','string'],
-
+            'organismID'          => [
+                'nullable','string',
+                Rule::unique((new Organism)->getTable(), 'organismID'),
+            ], // si quieres validar que exista: Rule::exists((new Organism)->getTable(),'organismID')
+            'locationID'          => [
+                'nullable','string',
+                Rule::unique((new Location)->getTable(), 'locationID')
+            ],
+            'taxonID'             => [
+                'nullable','string',
+                Rule::unique((new Taxon)->getTable(), 'taxonID')
+            ],
             'identificationID' => [
                 'nullable','string',
                 Rule::unique((new Occurrence)->getTable(), 'identificationID')->ignore($id, 'id_occ_bd'),

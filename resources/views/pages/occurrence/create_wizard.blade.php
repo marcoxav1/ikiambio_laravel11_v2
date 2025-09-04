@@ -53,6 +53,99 @@
     </li>
   </ul>
 
+  @push('scripts')
+    <script>
+    (function () {
+      // Clave de localStorage donde guardamos los vínculos
+      const KEY = 'occ_wizard_links_v2';
+
+      // Mapa: cada entidad con ids de hidden/label/summary y key en LS
+      const MAP = {
+        rl:  { hid:'record_level_id',   lab:'record_level_label',   sum:'summary-rl',  key:'record_level' },
+        org: { hid:'organismID',        lab:'organism_label',       sum:'summary-org', key:'organism' },
+        loc: { hid:'locationID',        lab:'location_label',       sum:'summary-loc', key:'location' },
+        tax: { hid:'taxonID',           lab:'taxon_label',          sum:'summary-tax', key:'taxon' },
+        idn: { hid:'identificationID',  lab:'identification_label', sum:'summary-id',  key:'identification' },
+      };
+
+      // Escribe hidden + label + summary y persiste en LS
+      function setPair(kind, id, label) {
+        const cfg = MAP[kind]; if (!cfg) return;
+        const $hid = document.getElementById(cfg.hid);
+        const $lab = document.getElementById(cfg.lab);
+        const $sum = document.getElementById(cfg.sum);
+
+        const text = label || (id ? '#'+id : '');
+
+        if ($hid) $hid.value = id || '';
+        if ($lab) $lab.value = text;
+        if ($sum) $sum.textContent = text || '—';
+
+        try {
+          const links = JSON.parse(localStorage.getItem(KEY) || '{}');
+          if (id) { links[cfg.key] = { id, label: text }; }
+          else { delete links[cfg.key]; }
+          localStorage.setItem(KEY, JSON.stringify(links));
+        } catch (e) {
+          console.warn('No se pudo guardar en localStorage', e);
+        }
+      }
+
+      // Restaura hidden + label + summary al cargar la página
+      function restoreAll() {
+        let links = {};
+        try { links = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch {}
+
+        Object.values(MAP).forEach(cfg => {
+          const $hid = document.getElementById(cfg.hid);
+          const $lab = document.getElementById(cfg.lab);
+          const $sum = document.getElementById(cfg.sum);
+
+          // 1) Prioriza valor existente en hidden (old/modelo)
+          let id = ($hid?.value || '').trim();
+          let label = ($lab?.value || '').trim();
+
+          // 2) Si no hay, toma de localStorage
+          if (!id && links[cfg.key]?.id) {
+            id    = links[cfg.key].id;
+            label = links[cfg.key].label || ('#'+id);
+          }
+
+          if ($hid) $hid.value = id;
+          if ($lab) $lab.value = label || (id ? '#'+id : '');
+          if ($sum) $sum.textContent = label || (id ? '#'+id : '—');
+        });
+      }
+
+      // EXPONE funciones globales para que tus modales las llamen al seleccionar/guardar
+      window.applyRecordLevel     = (id, label) => setPair('rl',  id, label);
+      window.applyOrganism        = (id, label) => setPair('org', id, label);
+      window.applyLocation        = (id, label) => setPair('loc', id, label);
+      window.applyTaxon           = (id, label) => setPair('tax', id, label);
+      window.applyIdentification  = (id, label) => setPair('idn', id, label);
+
+      // Restaura al cargar
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', restoreAll);
+      } else {
+        restoreAll();
+      }
+
+      // Debug opcional en consola
+      window._occDebugDump = function () {
+        const dump = {};
+        Object.values(MAP).forEach(cfg => {
+          dump[cfg.hid] = document.getElementById(cfg.hid)?.value || '';
+          dump[cfg.lab] = document.getElementById(cfg.lab)?.value || '';
+        });
+        console.log('Hiddens/Labels:', dump);
+        console.log('localStorage:', localStorage.getItem(KEY));
+      };
+    })();
+    </script>
+    @endpush
+
+
   <div class="tab-content border-start border-end border-bottom p-3">
     {{-- ============ TAB 1: OCCURRENCE (SOLO CAMPOS PROPIOS) ============ --}}
     <div class="tab-pane fade show active" id="tab-occurrence" role="tabpanel">
@@ -60,12 +153,12 @@
         @csrf
 
         {{-- ***** IDs ocultos que se rellenan desde otras pestañas ***** --}}
-        <input type="hidden" name="record_level_id" id="record_level_id" value="{{ old('record_level_id') }}">
+       {{--  <input type="hidden" name="record_level_id" id="record_level_id" value="{{ old('record_level_id') }}">
         <input type="hidden" name="organismID"       id="organismID"       value="{{ old('organismID') }}">
         <input type="hidden" name="locationID"       id="locationID"       value="{{ old('locationID') }}">
         <input type="hidden" name="taxonID"          id="taxonID"          value="{{ old('taxonID') }}">
         <input type="hidden" name="identificationID" id="identificationID" value="{{ old('identificationID') }}">
-
+ --}}
         {{-- Resumen de selección actual --}}
         <div class="alert alert-secondary small" role="alert">
           <div class="mb-1 fw-bold">Selecciones vinculadas:</div>
@@ -77,27 +170,36 @@
         </div>
 
         {{--  RECORD LEVEL Hidden real + campo de solo lectura + botón modal --}}
-        <input type="hidden" name="record_level_id" id="record_level_id"
+
+         <input type="hidden" name="record_level_id" id="record_level_id"
               value="{{ old('record_level_id', $item->record_level_id ?? '') }}">
 
-        <label class="label d-block">Record level</label>
-        <div class="input-group">
-          <input type="text" id="record_level_label" class="form-control"
-                placeholder="Selecciona o crea un Record level"
-                value="{{ isset($item->record_level_id) ? ('#'.$item->record_level_id.($item->recordLevel?->datasetName ? ' — '.$item->recordLevel->datasetName : '')) : '' }}"
-                readonly>
-          <button type="button" class="btn btn-outline-primary"
+        <label class="label" for="record_level_label">Record level</label>
+        <div class="input-group align-items-center">
+         <input type="text" id="record_level_label"
+              class="form-control @error('record_level_id') is-invalid @enderror"
+              placeholder="Selecciona o crea un Record level"
+              value="{{ old('record_level_id')
+                          ? ('#'.old('record_level_id'))
+                          : (isset($item->record_level_id)
+                              ? ('#'.$item->record_level_id.($item->recordLevel?->datasetName ? ' — '.$item->recordLevel->datasetName : ''))
+                              : '') }}"
+              readonly>
+            @error('record_level_id')
+              <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
+
+         <button type="button" class="btn btn-outline-primary"
                   data-bs-toggle="modal" data-bs-target="#modal-record-level">
             Elegir / Crear
           </button>&nbsp;
-          {{-- Acciones sobre el registro seleccionado --}}
-          <div id="rl-actions" class="mt-1" style="display:none">
+         <div id="rl-actions" class="mt-1" style="display:none">
             <a id="rl-view"  class="btn btn-link p-2" target="_blank" rel="noopener noreferrer">Ver</a>
             <a id="rl-edit"  class="btn btn-link p-2" target="_blank" rel="noopener noreferrer">Editar</a>
           </div>
         </div>
 
-        <small id="summary-rl" class="text-muted d-block mt-1">—</small>
+        <small id="summary-org" class="text-muted d-block mt-1">—</small>
 
 
         {{-- ORGANISM: hidden real + label lectura + botón modal + acciones --}}
@@ -106,10 +208,14 @@
 
         <label class="label d-block">Organism</label>
         <div class="input-group align-items-center">
-          <input type="text" id="organism_label" class="form-control"
-                placeholder="Selecciona o crea un Organism"
-                value="{{ isset($item->organismID) ? $item->organismID : '' }}"
-                readonly>
+          <input type="text" id="organism_label"
+            class="form-control @error('organismID') is-invalid @enderror"
+            placeholder="Selecciona o crea un Organism"
+            value="{{ old('organismID', $item->organismID ?? '') ? (old('organismID', $item->organismID ?? '')) : '' }}"
+            readonly>
+            @error('organismID')
+              <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
 
           <button type="button" class="btn btn-outline-primary"
                   data-bs-toggle="modal" data-bs-target="#modal-organism">
@@ -130,10 +236,14 @@
 
         <label class="label d-block">Location</label>
         <div class="input-group align-items-center">
-          <input type="text" id="location_label" class="form-control"
-                placeholder="Selecciona o crea una Location"
-                value="{{ isset($item->locationID) ? $item->locationID : '' }}"
-                readonly>
+          <input type="text" id="location_label"
+            class="form-control @error('locationID') is-invalid @enderror"
+            placeholder="Selecciona o crea un Location"
+            value="{{ old('locationID', $item->locationID ?? '') ? (old('locationID', $item->locationID ?? '')) : '' }}"
+            readonly>
+          @error('locationID')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+          @enderror  
 
           <button type="button" class="btn btn-outline-primary"
                   data-bs-toggle="modal" data-bs-target="#modal-location">
@@ -155,10 +265,14 @@
 
         <label class="label d-block">Taxon</label>
         <div class="input-group align-items-center">
-          <input type="text" id="taxon_label" class="form-control"
-                placeholder="Selecciona o crea un Taxon"
-                value="{{ isset($item->taxonID) ? $item->taxonID : '' }}"
-                readonly>
+          <input type="text" id="taxon_label"
+            class="form-control @error('taxonID') is-invalid @enderror"
+            placeholder="Selecciona o crea un Taxon"
+            value="{{ old('taxonID', $item->taxonID ?? '') ? (old('taxonID', $item->taxonID ?? '')) : '' }}"
+            readonly>
+          @error('taxonID')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+          @enderror
 
           <button type="button" class="btn btn-outline-primary"
                   data-bs-toggle="modal" data-bs-target="#modal-taxon">
@@ -174,6 +288,34 @@
         <small id="summary-tax" class="text-muted d-block mt-1">—</small>
 
 
+        {{-- IDENTIFICATION: hidden + label + botón modal + acciones --}}
+        <input type="hidden" name="identificationID" id="identificationID"
+              value="{{ old('identificationID', $item->identificationID ?? '') }}">
+
+        <label class="label d-block">Identification</label>
+        <div class="input-group align-items-center">
+          <input type="text" id="identification_label"
+            class="form-control @error('identificationID') is-invalid @enderror"
+            placeholder="Selecciona o crea un Identification"
+            value="{{ old('identificationID', $item->identificationID ?? '') ? (old('identificationID', $item->identificationID ?? '')) : '' }}"
+            readonly>
+          @error('identificationID')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+          @enderror
+
+          <button type="button" class="btn btn-outline-primary"
+                  data-bs-toggle="modal" data-bs-target="#modal-identification">
+            Elegir / Crear
+          </button>&nbsp;
+            <div id="idn-actions" class="mt-1" style="display:none">
+              <a id="idn-view" class="btn btn-link p-2" target="_blank" rel="noopener noreferrer">Ver</a>
+              <a id="idn-edit" class="btn btn-link p-2" target="_blank" rel="noopener noreferrer">Editar</a>
+            </div>
+        </div>
+
+        <small id="summary-id" class="text-muted d-block mt-1">—</small>
+
+
 
         {{-- ===== Campos propios de OCCURRENCE ===== --}}
         <div class="row g-3">
@@ -187,9 +329,12 @@
 
           <div class="col-md-4">
             <label class="label" for="catalogNumber">Catalog Number</label>
-            <input type="text" name="catalogNumber" id="catalogNumber" class="input"
-                   value="{{ old('catalogNumber') }}">
+            <input type="text" name="catalogNumber"
+                   id="catalogNumber" class="input"
+                   value="{{ old('catalogNumber', $item->catalogNumber ?? '') }}">
             @error('catalogNumber') <small class="text-danger">{{ $message }}</small> @enderror
+
+
           </div>
 
           <div class="col-md-4">
@@ -357,7 +502,7 @@
       </form>
 
 
-       {{--------------- INICIO DEL PROCESO RECORD LEVEL ---------------------}}
+       {{--------------- INICIO DE LA MODAL PARA EL PROCESO RECORD LEVEL ---------------------}}
 
         {{-- MODAL: Record Level --}}
         <div class="modal fade" id="modal-record-level" tabindex="-1" aria-hidden="true"> 
@@ -432,24 +577,59 @@
             el.addEventListener('hidden.bs.toast', () => el.remove());
           }
 
+          function forceUnlockUI() {
+            // Elimina cualquier backdrop (incluye offcanvas)
+            document.querySelectorAll('.modal-backdrop, .offcanvas-backdrop')
+              .forEach(b => b.remove());
+
+            // Oculta y resetea cualquier modal que haya quedado visible
+            document.querySelectorAll('.modal.show, .modal[style*="display: block"]').forEach(m => {
+              try { bootstrap.Modal.getInstance(m)?.hide(); } catch(e) {}
+              m.classList.remove('show');
+              m.style.display = 'none';
+              m.setAttribute('aria-hidden','true');
+            });
+
+            // Quita flags/clases/estilos que bloquean el scroll
+            document.body.classList.remove('modal-open');
+            document.documentElement.classList.remove('modal-open');
+            ['overflow','padding-right','position','top','width'].forEach(p => {
+              document.body.style.removeProperty(p);
+              document.documentElement.style.removeProperty(p);
+            });
+
+            // Por si el foco quedó atrapado en un elemento oculto
+            try { document.activeElement?.blur?.(); } catch(e) {}
+          }
+
           // Cerrar modal (robusto)
           function closeModalById(id) {
             const el = document.getElementById(id);
-            if (!el) { console.warn('Modal no encontrada:', id); return; }
+            if (!el) return;
 
+            // Usa la MISMA instancia que la abrió si existe
             let inst = window.bootstrap?.Modal.getInstance(el);
             if (!inst) inst = window.bootstrap?.Modal.getOrCreateInstance(el);
+
+            // Al cerrarse, dispara limpieza final (una sola vez)
+            el.addEventListener('hidden.bs.modal', () => forceUnlockUI(), { once: true });
 
             if (inst) {
               inst.hide();
             } else {
+              // Fallback si no hay instancia válida
               el.classList.remove('show');
               el.style.display = 'none';
-              document.body.classList.remove('modal-open');
-              document.body.style.removeProperty('padding-right');
-              document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+              el.setAttribute('aria-hidden','true');
+              forceUnlockUI();
             }
           }
+
+          // Seguridad extra global: si cualquier modal se oculta, limpia restos
+          document.addEventListener('hidden.bs.modal', () => {
+            // Si no queda ninguna visible, desbloquea
+            if (!document.querySelector('.modal.show')) forceUnlockUI();
+          });
 
           // Enlaza/visibiliza los links Ver/Editar según el ID actual
           function updateRlLinks(id) {
@@ -476,6 +656,7 @@
 
             updateRlLinks(id);
             closeModalById('modal-record-level');
+            window.unlockBodyScrollIfNoModal?.();
 
             // Persistencia opcional (autosave wizard)
             try {
@@ -580,7 +761,7 @@
 
         {{--------------- FIN DEL PROCESO ---------------------}}
 
-        {{--------------- INICIO DEL PROCESO ORGANISM ---------------------}}
+        {{--------------- INICIO DE LA MODAL PARA EL PROCESO ORGANISM ---------------------}}
 
         <div class="modal fade" id="modal-organism" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -684,6 +865,7 @@
 
               updateOrgLinks(id);
               closeModalById('modal-organism');
+              window.unlockBodyScrollIfNoModal?.();
               showToast('Organism guardado/asignado ✅', 'success');
 
               // Persistencia opcional (si usas autosave del wizard)
@@ -787,7 +969,7 @@
 
         {{--------------- FIN DEL PROCESO ---------------------}}
 
-        {{--------------- INICIO DEL PROCESO LOCATION ---------------------}}
+        {{--------------- INICIO DE LA MODAL PARA EL PROCESO LOCATION ---------------------}}
 
         <div class="modal fade" id="modal-location" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -895,6 +1077,7 @@
 
             updateLocLinks(id);
             closeModalById('modal-location');
+            window.unlockBodyScrollIfNoModal?.();
             showToast('Location guardada/asignada ✅', 'success');
 
             // Persistencia opcional (autosave wizard)
@@ -997,7 +1180,7 @@
 
       {{--------------- FIN DEL PROCESO ---------------------}}
 
-      {{--------------- INICIO DEL PROCESO LOCATION ---------------------}}
+      {{--------------- INICIO DE LA MODAL PARA EL PROCESO TAXON ---------------------}}
 
         <div class="modal fade" id="modal-taxon" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -1245,9 +1428,299 @@
         </script>
         @endpush
 
-
-
       {{--------------- FIN DEL PROCESO ---------------------}}  
+
+
+      {{--------------- INICIO DE LA MODAL PARA EL PROCESO IDENTIFICATION ---------------------}}  
+
+        <div class="modal fade" id="modal-identification" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Identification — Buscar / Crear</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+              </div>
+
+              <div class="modal-body">
+                {{-- Buscador --}}
+                <div class="mb-3">
+                  <label class="label">Buscar Identification</label>
+                  <input type="text" id="idn-search" class="form-control"
+                        placeholder="ID, identifiedBy, remarks…">
+                  <div id="idn-results" class="list-group mt-2"></div>
+                </div>
+
+                <hr class="my-3">
+
+                {{-- Form AJAX --}}
+                <form id="idn-modal-form" action="{{ route('ajax.identifications.store') }}" method="POST">
+                  @csrf
+                  @if (View::exists('pages.identification.partials.form'))
+                    {{-- Reutiliza partial completo con TODOS los campos --}}
+                    @include('pages.identification.partials.form', [
+                      'item' => null,
+                      'idPrefix' => 'mi_',  // prefijo para evitar choque de IDs
+                      // si tu partial requiere $typeStatuses y $verificationStatuses, pásalos desde el controlador
+                    ])
+                  @else
+                    {{-- Versión mínima si aún no tienes partial --}}
+                    <div class="row g-3">
+                      <div class="col-md-4">
+                        <label class="label" for="mi_identificationID">Identification ID (vacío = auto)</label>
+                        <input type="text" name="identificationID" id="mi_identificationID" class="form-control">
+                      </div>
+
+                      <div class="col-md-4">
+                        <label class="label" for="mi_identifiedBy">Identified by</label>
+                        <input type="text" name="identifiedBy" id="mi_identifiedBy" class="form-control">
+                      </div>
+
+                      <div class="col-md-4">
+                        <label class="label" for="mi_dateIdentified">Date identified</label>
+                        <input type="date" name="dateIdentified" id="mi_dateIdentified" class="form-control">
+                      </div>
+
+                      <div class="col-md-4">
+                        <label class="label" for="mi_identificationQualifier">Identification qualifier</label>
+                        <input type="text" name="identificationQualifier" id="mi_identificationQualifier" class="form-control">
+                      </div>
+
+                      <div class="col-md-4">
+                        <label class="label" for="mi_typeStatus">Type status</label>
+                        <select name="typeStatus" id="mi_typeStatus" class="form-control">
+                          <option value="">— Selecciona —</option>
+                          @foreach($typeStatuses as $opt)
+                            <option value="{{ $opt->vocab_identification_typeStatus_id }}">{{ $opt->typeStatus_value }}</option>
+                          @endforeach
+                        </select>
+                      </div>
+
+                      <div class="col-md-4">
+                        <label class="label" for="mi_identificationVerificationStatus">Verification status</label>
+                        <select name="identificationVerificationStatus" id="mi_identificationVerificationStatus" class="form-control">
+                          <option value="">— Selecciona —</option>
+                          @foreach($verificationStatuses as $opt)
+                            <option value="{{ $opt->vocab_identification_verificationStatus_id }}">
+                              {{ $opt->identificationVerificationStatus_value }}
+                            </option>
+                          @endforeach
+                        </select>
+                      </div>
+
+                      <div class="col-12">
+                        <label class="label" for="mi_identificationRemarks">Remarks</label>
+                        <textarea name="identificationRemarks" id="mi_identificationRemarks" rows="2" class="form-control"></textarea>
+                      </div>
+                    </div>
+                  @endif
+
+                  <div class="mt-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Guardar y usar</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  </div>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        </div>
+        @push('scripts')
+          <script>
+          (function () {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+            // Rutas Ver/Editar
+            const idnShowTpl = @json(route('identification.show', '__ID__'));
+            const idnEditTpl = @json(route('identification.edit', '__ID__'));
+
+            function toastIdn(message, variant='success') {
+              const area = document.getElementById('toast-area');
+              if (!area || !window.bootstrap) { alert(message); return; }
+              const el = document.createElement('div');
+              el.className = `toast align-items-center text-bg-${variant} border-0`;
+              el.setAttribute('role','alert'); el.setAttribute('aria-live','assertive'); el.setAttribute('aria-atomic','true');
+              el.innerHTML = `<div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+              </div>`;
+              area.appendChild(el);
+              const t = new bootstrap.Toast(el, { delay: 2500, autohide: true });
+              t.show(); el.addEventListener('hidden.bs.toast', () => el.remove());
+            }
+
+            /* function closeIdnModal() {
+              const el = document.getElementById('modal-identification'); if (!el) return;
+              let inst = window.bootstrap?.Modal.getInstance(el) || window.bootstrap?.Modal.getOrCreateInstance(el);
+              if (inst) inst.hide(); else {
+                el.classList.remove('show'); el.style.display='none';
+                document.body.classList.remove('modal-open'); document.body.style.removeProperty('padding-right');
+                document.querySelectorAll('.modal-backdrop').forEach(b=>b.remove());
+              }
+            } */
+
+            document.addEventListener('hidden.bs.modal', () => {
+              if (!document.querySelector('.modal.show')) {
+                document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('padding-right');
+              }
+            });
+
+            function closeIdnModal() {
+              closeModalById('modal-identification');
+            }
+
+            function closeModalById(id) {
+              const el = document.getElementById(id);
+              if (!el) return;
+
+              // Intenta usar la misma instancia que abrió la modal
+              let inst = window.bootstrap?.Modal.getInstance(el);
+              if (!inst) inst = window.bootstrap?.Modal.getOrCreateInstance(el);
+
+              // Al cerrarse definitivamente, limpia backdrop/clases restantes
+              el.addEventListener('hidden.bs.modal', () => {
+                if (!document.querySelector('.modal.show')) { // si no quedan modales visibles
+                  document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+                  document.body.classList.remove('modal-open');
+                  document.body.style.removeProperty('padding-right');
+                }
+              }, { once: true });
+
+              // Ejecuta el cierre
+              if (inst) inst.hide();
+              else {
+                // Fallback, por si no hay instancia (dobles versiones de Bootstrap, etc.)
+                el.classList.remove('show');
+                el.style.display = 'none';
+                document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('padding-right');
+              }
+
+              // Saca el foco de elementos que aún puedan quedar “atrapados”
+              document.activeElement?.blur?.();
+            }
+
+            function updateIdnLinks(id) {
+              const box = document.getElementById('idn-actions');
+              const v = document.getElementById('idn-view');
+              const e = document.getElementById('idn-edit');
+              if (box && v && e && id) {
+                v.href = idnShowTpl.replace('__ID__', encodeURIComponent(id));
+                e.href = idnEditTpl.replace('__ID__', encodeURIComponent(id));
+                box.style.display = 'flex';
+              } else if (box) {
+                box.style.display = 'none';
+              }
+            }
+
+            function applyIdentification(id, label) {
+              document.getElementById('identificationID').value = id;
+              const $label = document.getElementById('identification_label');
+              if ($label) $label.value = label || id;
+              const $sum = document.getElementById('summary-id');
+              if ($sum) $sum.textContent = label || id;
+
+              updateIdnLinks(id);
+
+              // ⬇️ Cierre robusto + limpieza
+              closeModalById('modal-identification');
+              window.unlockBodyScrollIfNoModal?.();
+
+              toastIdn('Identification guardada/asignada ✅','success');
+
+              try {
+                const draft = JSON.parse(localStorage.getItem('occ_wizard_occurrence_v2') || '{}');
+                draft['identificationID'] = id;
+                localStorage.setItem('occ_wizard_occurrence_v2', JSON.stringify(draft));
+
+                const links = JSON.parse(localStorage.getItem('occ_wizard_links_v2') || '{}');
+                links['identification'] = { id, label: label || id };
+                localStorage.setItem('occ_wizard_links_v2', JSON.stringify(links));
+              } catch {}
+            }
+
+            // Submit AJAX
+            const idnForm = document.getElementById('idn-modal-form');
+            const submitBtn = idnForm?.querySelector('button[type="submit"]');
+
+            idnForm?.addEventListener('submit', async function(e){
+              e.preventDefault();
+              const original = submitBtn?.innerHTML;
+              submitBtn?.setAttribute('disabled','disabled');
+              if (submitBtn) submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Guardando...`;
+
+              try {
+                const res = await fetch(idnForm.action, {
+                  method: 'POST',
+                  credentials: 'same-origin',
+                  headers: { 'X-CSRF-TOKEN': csrf, 'X-Requested-With':'XMLHttpRequest', 'Accept':'application/json' },
+                  body: new FormData(idnForm)
+                });
+
+                if (!res.ok) {
+                  let msg = 'Error al guardar';
+                  try { const j = await res.json(); if (j?.message) msg = j.message; } catch {}
+                  toastIdn(msg, 'danger');
+                  return;
+                }
+
+                const data = await res.json(); // { id, label }
+                applyIdentification(data.id, data.label);
+
+              } catch (err) {
+                toastIdn('Error de red o servidor.','danger');
+              } finally {
+                if (submitBtn) { submitBtn.innerHTML = original || 'Guardar y usar'; submitBtn.removeAttribute('disabled'); }
+              }
+            });
+
+            // Buscador
+            const $q = document.getElementById('idn-search');
+            const $results = document.getElementById('idn-results');
+            function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+
+            if ($q && $results) {
+              const doSearch = debounce(async () => {
+                const q = $q.value.trim();
+                if (q.length < 2) { $results.innerHTML = ''; return; }
+
+                const url = @json(route('ajax.identifications.search')) + '?q=' + encodeURIComponent(q);
+                const res = await fetch(url, { headers:{ 'Accept':'application/json' }, credentials:'same-origin' });
+                const items = res.ok ? await res.json() : [];
+
+                $results.innerHTML = (items && items.length && items[0].id !== '')
+                  ? items.map(i => `
+                      <button type="button" class="list-group-item list-group-item-action"
+                              data-id="${i.id}" data-label="${i.text}">
+                        ${i.text}
+                      </button>`).join('')
+                  : '<div class="list-group-item text-muted">Sin resultados</div>';
+              }, 300);
+
+              $q.addEventListener('input', doSearch);
+
+              $results.addEventListener('click', (e) => {
+                const btn = e.target.closest('.list-group-item'); if (!btn) return;
+                applyIdentification(btn.dataset.id, btn.dataset.label);
+                toastIdn('Identification asignada ✅');
+              });
+            }
+
+            // Estado inicial
+            document.addEventListener('DOMContentLoaded', () => {
+              const current = document.getElementById('identificationID')?.value;
+              if (current) updateIdnLinks(current);
+            });
+          })();
+          </script>
+        @endpush
+
+
+
+      {{--------------- FIN DEL PROCESO ---------------------}}
+
 
       {{---------- INICIO DE SCRIPTS PARA POBLAR LOS COMBOS CON DATA DE LOCALSTORAGE -------}}  
       
@@ -1295,6 +1768,15 @@
             summaryId:'summary-tax',
             draftKey: 'taxonID',
             linkKey:  'taxon',
+            makeFallbackLabel: id => id
+          },
+          {
+            kind: 'identification',
+            hiddenId: 'identificationID',
+            labelId:  'identification_label',
+            summaryId:'summary-id',
+            draftKey: 'identificationID',
+            linkKey:  'identification',
             makeFallbackLabel: id => id
           }
 
@@ -1357,6 +1839,177 @@
 
     {{---------- FIN DE SCRIPTS PARA POBLAR LOS COMBOS CON DATA DE LOCALSTORAGE -------}}    
 
+    {{---------- INICIO DE SCRIPTS PARA VALIDAR CAMPOS HIDDEN -------}}   
+      {{-- @push('scripts')
+        <script>
+          (function () {
+            const form = document.getElementById('occ-form'); // id de tu form principal
+            if (!form) return;
+
+            form.addEventListener('submit', function (e) {
+              const requiredIds = [
+                ['record_level_id','record_level_label','Debes seleccionar un Record level'],
+                ['organismID','organism_label','Debes seleccionar un Organism'],
+                ['locationID','location_label','Debes seleccionar un Location'],
+                ['taxonID','taxon_label','Debes seleccionar un Taxon'],
+                ['identificationID','identification_label','Debes seleccionar un Identification'],
+              ];
+
+              let firstInvalid = null;
+
+              requiredIds.forEach(([hiddenId, labelId, msg]) => {
+                const hid = document.getElementById(hiddenId);
+                const lab = document.getElementById(labelId);
+                const has = (hid?.value || '').trim().length > 0;
+
+                // limpia estado previo
+                lab?.classList.remove('is-invalid');
+                const fbSel = lab?.nextElementSibling;
+                if (fbSel && fbSel.classList.contains('invalid-feedback')) fbSel.remove();
+
+                if (!has) {
+                  if (lab) {
+                    lab.classList.add('is-invalid');
+                    const fb = document.createElement('div');
+                    fb.className = 'invalid-feedback d-block';
+                    fb.textContent = msg;
+                    lab.insertAdjacentElement('afterend', fb);
+                  }
+                  if (!firstInvalid) firstInvalid = lab || hid;
+                }
+              });
+
+              if (firstInvalid) {
+                e.preventDefault();
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            });
+          })();
+        </script>
+      @endpush --}}
+
+      {{-- @push('scripts')
+        <script>
+        (function () {
+          // Mapea cada entidad con sus IDs de elementos y la clave usada en localStorage
+          const MAP = {
+            rl:  { hid: 'record_level_id',     lab: 'record_level_label',     sum: 'summary-rl',  key: 'record_level' },
+            org: { hid: 'organismID',          lab: 'organism_label',         sum: 'summary-org', key: 'organism' },
+            loc: { hid: 'locationID',          lab: 'location_label',         sum: 'summary-loc', key: 'location' },
+            tax: { hid: 'taxonID',             lab: 'taxon_label',            sum: 'summary-tax', key: 'taxon' },
+            idn: { hid: 'identificationID',    lab: 'identification_label',   sum: 'summary-id',  key: 'identification' },
+          };
+
+          function setPair(kind, id, label) {
+            const cfg = MAP[kind]; if (!cfg) return;
+            const $hid = document.getElementById(cfg.hid);
+            const $lab = document.getElementById(cfg.lab);
+            const $sum = document.getElementById(cfg.sum);
+
+            if ($hid) $hid.value = id || '';
+            const labelText = label || (id ? '#'+id : '');
+            if ($lab) $lab.value = labelText;
+            if ($sum) $sum.textContent = labelText || '—';
+
+            // Persistimos el vínculo (para restaurar tras recarga)
+            try {
+              const links = JSON.parse(localStorage.getItem('occ_wizard_links_v2') || '{}');
+              if (id) {
+                links[cfg.key] = { id, label: labelText };
+              } else {
+                delete links[cfg.key];
+              }
+              localStorage.setItem('occ_wizard_links_v2', JSON.stringify(links));
+            } catch {}
+          }
+
+          // Restaura en carga: si el hidden ya tiene valor (old()/modelo), usa eso.
+          // Si no, intenta desde localStorage.
+          function restoreOne(kind) {
+            const cfg = MAP[kind]; if (!cfg) return;
+            const $hid = document.getElementById(cfg.hid);
+            const $lab = document.getElementById(cfg.lab);
+            const $sum = document.getElementById(cfg.sum);
+
+            let id = ($hid?.value || '').trim();
+            let label = ($lab?.value || '').trim();
+
+            if (!id) {
+              try {
+                const links = JSON.parse(localStorage.getItem('occ_wizard_links_v2') || '{}');
+                const saved = links?.[cfg.key];
+                if (saved?.id) {
+                  id = saved.id;
+                  label = saved.label || ('#'+id);
+                  if ($hid) $hid.value = id;
+                }
+              } catch {}
+            }
+
+            if (id && $lab && !label) label = '#'+id;
+            if ($lab && label) $lab.value = label;
+            if ($sum) $sum.textContent = label || (id ? '#'+id : '—');
+          }
+
+          ['rl','org','loc','tax','idn'].forEach(restoreOne);
+
+          // Exponer funciones globales para que las modales las invoquen al guardar/seleccionar:
+          window.applyRecordLevel     = (id, label) => setPair('rl',  id, label);
+          window.applyOrganism        = (id, label) => setPair('org', id, label);
+          window.applyLocation        = (id, label) => setPair('loc', id, label);
+          window.applyTaxon           = (id, label) => setPair('tax', id, label);
+          window.applyIdentification  = (id, label) => setPair('idn', id, label);
+
+          // (Opcional) Validación rápida antes de submit: exige que los hidden tengan valor
+          const form = document.getElementById('occ-form'); // id de tu <form> principal
+          if (form) {
+            form.addEventListener('submit', function (e) {
+              const req = [
+                ['rl',  'Debes seleccionar un Record level'],
+                ['org', 'Debes seleccionar un Organism'],
+                ['loc', 'Debes seleccionar un Location'],
+                ['tax', 'Debes seleccionar un Taxon'],
+                ['idn', 'Debes seleccionar un Identification'],
+              ];
+              let first = null;
+
+              req.forEach(([kind, msg]) => {
+                const cfg = MAP[kind];
+                const $hid = document.getElementById(cfg.hid);
+                const $lab = document.getElementById(cfg.lab);
+                const has = ($hid?.value || '').trim().length > 0;
+
+                // limpia feedback previo
+                if ($lab) {
+                  $lab.classList.remove('is-invalid');
+                  const sib = $lab.nextElementSibling;
+                  if (sib && sib.classList.contains('invalid-feedback')) sib.remove();
+                }
+
+                if (!has) {
+                  if ($lab) {
+                    $lab.classList.add('is-invalid');
+                    const fb = document.createElement('div');
+                    fb.className = 'invalid-feedback d-block';
+                    fb.textContent = msg;
+                    $lab.insertAdjacentElement('afterend', fb);
+                  }
+                  if (!first) first = $lab || $hid;
+                }
+              });
+
+              if (first) {
+                e.preventDefault();
+                first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            });
+          }
+        })();
+        </script>
+      @endpush --}}
+
+
+     {{---------- FIN DE SCRIPTS PARA VALIDAR CAMPOS HIDDEN -------}}    
 
 
     </div>
@@ -1807,6 +2460,19 @@
 
 
 })();
+
+function unlockBodyScrollIfNoModal() {
+    if (!document.querySelector('.modal.show')) {
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('padding-right');
+      document.documentElement.style.removeProperty('overflow');
+      document.querySelectorAll('.modal-backdrop, .offcanvas-backdrop').forEach(b => b.remove());
+    }
+  }
+
+  document.addEventListener('hidden.bs.modal', unlockBodyScrollIfNoModal);
+  window.unlockBodyScrollIfNoModal = unlockBodyScrollIfNoModal;
 
 </script>
 @endpush

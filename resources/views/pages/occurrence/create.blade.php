@@ -7,6 +7,22 @@
 
 @section('content')
 <div class="card card-body">
+
+  @if (session('ok'))
+    <div class="alert alert-success">{{ session('ok') }}</div>
+  @endif
+
+  @if ($errors->any())
+    <div class="alert alert-danger">
+      <strong>Revisa los siguientes errores:</strong>
+      <ul class="mb-0">
+        @foreach ($errors->all() as $error)
+          <li>{{ $error }}</li>
+        @endforeach
+      </ul>
+    </div>
+  @endif
+
   <form method="POST" action="{{ route('occurrence.store') }}">
     @csrf
     @include('pages.occurrence.partials.form', [
@@ -18,7 +34,6 @@
       'reproConds' => $reproConds,
       'estabMeans' => $estabMeans,
       'dispositions' => $dispositions,
-      // NUEVO:
       'continents' => $continents,
       'verbatimSrs' => $verbatimSrs,
       'georefStatuses' => $georefStatuses,

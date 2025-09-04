@@ -5,7 +5,7 @@
 
 <div class="row g-3">
   {{-- ==================== SELECTS (FKs) ==================== --}}
-  <div class="col-md-6">
+  <div class="col-md-4">
     <label class="label" for="type">Type *</label>
     <select name="type" id="type" class="input">
       <option value="">— Selecciona —</option>
@@ -19,7 +19,7 @@
     @error('type') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-6">
+  <div class="col-md-4">
     <label class="label" for="license">License *</label>
     <select name="license" id="license" class="input">
       <option value="">— Selecciona —</option>
@@ -33,7 +33,7 @@
     @error('license') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-6">
+  <div class="col-md-4">
     <label class="label" for="rightsHolder">Rights holder *</label>
     <select name="rightsHolder" id="rightsHolder" class="input">
       <option value="">— Selecciona —</option>
@@ -47,7 +47,7 @@
     @error('rightsHolder') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-6">
+  <div class="col-md-4">
     <label class="label" for="accessRights">Access rights *</label>
     <select name="accessRights" id="accessRights" class="input">
       <option value="">— Selecciona —</option>
@@ -61,7 +61,7 @@
     @error('accessRights') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-6">
+  <div class="col-md-4">
     <label class="label" for="institutionID">Institution ID *</label>
     <select name="institutionID" id="institutionID" class="input">
       <option value="">— Selecciona —</option>
@@ -75,7 +75,7 @@
     @error('institutionID') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-6">
+  <div class="col-md-4">
     <label class="label" for="collectionID">Collection ID *</label>
     <select name="collectionID" id="collectionID" class="input">
       <option value="">— Selecciona —</option>
@@ -89,7 +89,7 @@
     @error('collectionID') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-6">
+  <div class="col-md-4">
     <label class="label" for="institutionCode">Institution code *</label>
     <select name="institutionCode" id="institutionCode" class="input">
       <option value="">— Selecciona —</option>
@@ -103,7 +103,7 @@
     @error('institutionCode') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-6">
+  <div class="col-md-4">
     <label class="label" for="collectionCode">Collection code *</label>
     <select name="collectionCode" id="collectionCode" class="input">
       <option value="">— Selecciona —</option>
@@ -117,7 +117,7 @@
     @error('collectionCode') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-6">
+  <div class="col-md-4">
     <label class="label" for="ownerInstitutionCode">Owner Institution code *</label>
     <select name="ownerInstitutionCode" id="ownerInstitutionCode" class="input">
       <option value="">— Selecciona —</option>
@@ -131,7 +131,7 @@
     @error('ownerInstitutionCode') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-6">
+  <div class="col-md-4">
     <label class="label" for="basisOfRecord">Basis of record *</label>
     <select name="basisOfRecord" id="basisOfRecord" class="input">
       <option value="">— Selecciona —</option>
@@ -160,14 +160,14 @@
     @error('language') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-6">
+  <div class="col-md-5">
     <label class="label" for="datasetID">Dataset ID</label>
     <input type="text" name="datasetID" id="datasetID" class="input" maxlength="100"
            value="{{ old('datasetID', $item->datasetID ?? '') }}">
     @error('datasetID') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-12">
+  <div class="col-md-5">
     <label class="label" for="datasetName">Dataset Name</label>
     <input type="text" name="datasetName" id="datasetName" class="input" maxlength="255"
            value="{{ old('datasetName', $item->datasetName ?? '') }}">

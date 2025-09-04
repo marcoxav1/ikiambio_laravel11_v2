@@ -25,8 +25,8 @@
   </div>
 
   <div class="col-md-4">
-    <label class="label" for="catalogNumber">Catalog Number</label>
-    <input type="text" name="catalogNumber" id="catalogNumber" class="input"
+    <label class="label" for="catalogNumber">Catalog Number 1111</label>
+    <input type="text" name="catalogNumber" id="catalogNumber" class="input" class="input @error('catalogNumber') is-invalid @enderror"
            value="{{ old('catalogNumber', $item->catalogNumber ?? '') }}">
     @error('catalogNumber') <small class="text-danger">{{ $message }}</small> @enderror
   </div>

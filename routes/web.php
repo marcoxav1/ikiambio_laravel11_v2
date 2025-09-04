@@ -36,6 +36,11 @@ Route::resource('organism', OrganismWebController::class)
 use App\Http\Controllers\Web\TaxonWebController;
 Route::resource('taxon', TaxonWebController::class)->names('taxon');
 
+use App\Http\Controllers\Web\IdentificationWebController;
+Route::resource('identification', IdentificationWebController::class)
+    ->parameters(['identification' => 'identification'])
+    ->names('identification');  // identification.index, identification.show, ...
+
 
 // ===================== RECORD LEVEL =====================
 use App\Http\Controllers\Web\RecordLevel\TypeController;

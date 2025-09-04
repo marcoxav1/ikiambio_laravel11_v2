@@ -3,23 +3,45 @@
 namespace App\Http\Controllers\Ajax;
 
 use App\Http\Controllers\Controller;
+use App\Models\Identification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
-
-// Modelos
-use App\Models\Identification;
-// Vocabs
-use App\Models\Vocab\Identification\TypeStatus;
-use App\Models\Vocab\Identification\VerificationStatus;
 
 class IdentificationController extends Controller
 {
-    /** GET /ajax/identifications/search?q=... => [{id,text}] */
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'identificationID'                   => ['nullable','string','max:100','unique:identification,identificationID'],
+            'identificationQualifier'            => ['nullable','string','max:100'],
+            'typeStatus'                         => ['nullable','integer'], // FK
+            'identifiedBy'                       => ['nullable','string','max:255'],
+            'dateIdentified'                     => ['nullable','date'],
+            'identificationVerificationStatus'   => ['nullable','integer'], // FK
+            'identificationRemarks'              => ['nullable','string'],
+        ]);
+
+        if (empty($data['identificationID'])) {
+            $data['identificationID'] = (string) \Illuminate\Support\Str::uuid();
+        }
+
+        $idn = DB::transaction(fn() => Identification::create($data));
+
+        // Etiqueta legible
+        $parts = array_filter([
+            $idn->identifiedBy ? 'by: '.$idn->identifiedBy : null,
+            $idn->dateIdentified ? 'date: '.$idn->dateIdentified : null,
+            $idn->identificationQualifier ? 'qualif: '.$idn->identificationQualifier : null,
+            $idn->identificationRemarks ? \Illuminate\Support\Str::limit($idn->identificationRemarks, 40) : null,
+        ]);
+        $label = $idn->identificationID.' — '.implode(' • ', $parts);
+
+        return response()->json(['id' => $idn->identificationID, 'label' => $label]);
+    }
+
     public function search(Request $request)
     {
-        $q = trim((string) $request->query('q', ''));
+        $q = trim((string) $request->query('q',''));
         if ($q === '') return response()->json([]);
 
         $like = "%{$q}%";
@@ -27,45 +49,31 @@ class IdentificationController extends Controller
         $rows = Identification::query()
             ->where('identificationID', 'ilike', $like)
             ->orWhere('identifiedBy', 'ilike', $like)
+            ->orWhere('identificationQualifier', 'ilike', $like)
+            ->orWhere('identificationRemarks', 'ilike', $like)
             ->orderBy('identificationID')
             ->limit(20)
-            ->get(['identificationID','identifiedBy','identificationRemarks']);
+            ->get([
+                'identificationID','identifiedBy','dateIdentified','identificationQualifier','identificationRemarks'
+            ]);
 
         $items = $rows->map(function ($r) {
-            $label = $r->identificationID;
-            if ($r->identifiedBy) $label .= ' — '.$r->identifiedBy;
-            if ($r->identificationRemarks) $label .= ' — '.\Illuminate\Support\Str::limit($r->identificationRemarks, 40);
-            return ['id' => $r->identificationID, 'text' => $label];
+            $meta = array_filter([
+                $r->identifiedBy,
+                $r->dateIdentified,
+                $r->identificationQualifier,
+                $r->identificationRemarks ? \Illuminate\Support\Str::limit($r->identificationRemarks, 40) : null,
+            ]);
+            return [
+                'id'   => $r->identificationID,
+                'text' => $r->identificationID.' — '.implode(' • ', $meta),
+            ];
         });
+
+        if ($items->isEmpty()) {
+            return response()->json([['id' => '', 'text' => '— Sin resultados —']]);
+        }
 
         return response()->json($items);
-    }
-
-    /** POST /ajax/identifications => { id } (crea o actualiza por identificationID) */
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'identificationID'                => ['nullable','string','max:255'],
-            'identificationQualifier'         => ['nullable','string'],
-            'typeStatus'                      => ['nullable','integer', Rule::exists((new TypeStatus)->getTable(), (new TypeStatus)->getKeyName())],
-            'identifiedBy'                    => ['nullable','string','max:255'],
-            'dateIdentified'                  => ['nullable','date'],
-            'identificationVerificationStatus'=> ['nullable','integer', Rule::exists((new VerificationStatus)->getTable(), (new VerificationStatus)->getKeyName())],
-            'identificationRemarks'           => ['nullable','string'],
-        ]);
-
-        $id = DB::transaction(function () use ($data) {
-            $identID = $data['identificationID'] ?? (string) Str::uuid();
-            $row = Identification::find($identID);
-            if ($row) {
-                $row->update($data);
-            } else {
-                $data['identificationID'] = $identID;
-                $row = Identification::create($data);
-            }
-            return $row->identificationID;
-        });
-
-        return response()->json(['id' => $id]);
     }
 }
