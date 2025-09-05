@@ -16,7 +16,6 @@
       'reproConds' => $reproConds,
       'estabMeans' => $estabMeans,
       'dispositions' => $dispositions,
-      // NUEVO:
       'continents' => $continents,
       'verbatimSrs' => $verbatimSrs,
       'georefStatuses' => $georefStatuses,

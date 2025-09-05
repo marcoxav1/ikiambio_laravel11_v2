@@ -180,6 +180,16 @@
       Ver Organism
     </a>
 
+    <a id="org-edit22"
+      href="{{ route('organism.edit', $item->organismID) }}"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn btn-link"
+      aria-disabled="true">
+      Edit Organism
+    </a>
+   
+
     @push('scripts')
     <script>
     (function () {

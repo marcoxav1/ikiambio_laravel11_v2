@@ -160,39 +160,39 @@
     @error('language') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-5">
+  <div class="col-md-6">
     <label class="label" for="datasetID">Dataset ID</label>
     <input type="text" name="datasetID" id="datasetID" class="input" maxlength="100"
            value="{{ old('datasetID', $item->datasetID ?? '') }}">
     @error('datasetID') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-5">
+  <div class="col-md-6">
     <label class="label" for="datasetName">Dataset Name</label>
     <input type="text" name="datasetName" id="datasetName" class="input" maxlength="255"
            value="{{ old('datasetName', $item->datasetName ?? '') }}">
     @error('datasetName') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-12">
+  <div class="col-md-6">
     <label class="label" for="bibliographicCitation">Bibliographic citation</label>
     <textarea name="bibliographicCitation" id="bibliographicCitation" rows="3" class="input">{{ old('bibliographicCitation', $item->bibliographicCitation ?? '') }}</textarea>
     @error('bibliographicCitation') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-12">
+  <div class="col-md-6">
     <label class="label" for="references">References</label>
     <textarea name="references" id="references" rows="3" class="input">{{ old('references', $item->references ?? '') }}</textarea>
     @error('references') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-12">
+  <div class="col-md-6">
     <label class="label" for="informationWithheld">Information withheld</label>
     <textarea name="informationWithheld" id="informationWithheld" rows="3" class="input">{{ old('informationWithheld', $item->informationWithheld ?? '') }}</textarea>
     @error('informationWithheld') <small class="text-danger">{{ $message }}</small> @enderror
   </div>
 
-  <div class="col-md-12">
+  <div class="col-md-6">
     <label class="label" for="dataGeneralizations">Data generalizations</label>
     <textarea name="dataGeneralizations" id="dataGeneralizations" rows="3" class="input">{{ old('dataGeneralizations', $item->dataGeneralizations ?? '') }}</textarea>
     @error('dataGeneralizations') <small class="text-danger">{{ $message }}</small> @enderror
