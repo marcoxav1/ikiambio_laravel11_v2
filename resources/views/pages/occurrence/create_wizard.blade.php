@@ -1321,6 +1321,19 @@
             }
           }
 
+          function closeModalById(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            let inst = window.bootstrap?.Modal.getInstance(el) || window.bootstrap?.Modal.getOrCreateInstance(el);
+            if (inst) inst.hide();
+            else {
+              el.classList.remove('show'); el.style.display = 'none';
+              document.body.classList.remove('modal-open');
+              document.body.style.removeProperty('padding-right');
+              document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+            }
+          }
+
           function applyTaxon(id, label) {
             document.getElementById('taxonID').value = id;
             const $label = document.getElementById('taxon_label');
@@ -1330,6 +1343,9 @@
 
             updateTaxLinks(id);
             closeTaxonModal();
+            closeModalById('modal-taxon');
+
+            window.unlockBodyScrollIfNoModal?.(); 
             showToastTaxon('Taxon guardado/asignado ✅','success');
 
             // Persistencia opcional
