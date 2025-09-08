@@ -16,32 +16,31 @@
 
     <nav class="menu">
 
-      <a class="item {{ request()->routeIs('occurrence.*') ? 'active' : '' }}" href="{{ route('occurrence.create-wizard') }}">
-        @include('svg.users')
-        <span>OCCURRENCE TABS</span>
-      </a>
-
-      <a class="item {{ request()->routeIs('occurrence.*') ? 'active' : '' }}" href="{{ route('occurrence.index') }}">
-          @include('svg.users')
-          <span>OCCURRENCE BASE</span>
-      </a>      
       <a class="item {{ request()->routeIs('location.*') ? 'active' : '' }}" href="{{ route('location.index') }}">
         @include('svg.users')
-        <span>LOCATION BASE</span>
+        <span>LOCATION</span>
       </a>
       <a class="item {{ request()->routeIs('organism.*') ? 'active' : '' }}" href="{{ route('organism.index') }}">
-        @include('svg.users')
-        <span>ORGANISM BASE</span>
-      </a>
-      <a class="item {{ request()->routeIs('record-level.*') ? 'active' : '' }}" href="{{ route('record-level.index') }}">
-        @include('svg.users')
-        <span>RECORD LEVEL BASE</span>
+        @include('svg.cap')
+        <span>ORGANISM</span>
       </a>
       <a class="item {{ request()->routeIs('taxon.*') ? 'active' : '' }}" href="{{ route('taxon.index') }}">
-        @include('svg.users')
-        <span>TAXON BASE</span>
+        @include('svg.list')
+        <span>TAXON</span>
       </a>
-      
+      <a class="item {{ request()->routeIs('record-level.*') ? 'active' : '' }}" href="{{ route('record-level.index') }}">
+        @include('svg.shield')
+        <span>RECORD LEVEL</span>
+      </a>
+       <a class="item {{ request()->routeIs('identification.*') ? 'active' : '' }}" href="{{ route('identification.index') }}">
+        @include('svg.role')
+        <span>IDENTIFICATION</span>
+      </a>
+      <a class="item {{ request()->routeIs('occurrence.*') ? 'active' : '' }}" href="{{ route('occurrence.index') }}">
+          @include('svg.users')
+          <span>OCCURRENCE</span>
+      </a>      
+     
       @php
         $vocabsOpen =
             request()->routeIs('vocab-record-level-*')
@@ -56,11 +55,11 @@
 
       {{-- ==================== REGISTRO VOCABS (PADRE) ==================== --}}
       <div class="group collapsible {{ $vocabsOpen ? 'open' : '' }}" data-key="vocabs">
-        <button class="group-header" type="button">
-           @include('svg.list')
-          <span>REGISTRO VOCABS</span>
-          <span class="chev" aria-hidden="true"></span>
-        </button>
+
+        <button class="item group-header" type="button">
+        @include('svg.list')
+        <span>FUNCIONALIDADES</span>
+      </button>
 
         <div class="group-items">
 

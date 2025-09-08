@@ -7,7 +7,8 @@
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
     <h6 class="m-0">Listado</h6>
-    <a href="{{ route('occurrence.create') }}" class="btn btn-primary btn-sm">Nuevo</a>
+    <a href="{{ route('occurrence.create-wizard') }}" class="btn btn-secondary btn-sm">Nuevo</a>
+
   </div>
 
   <div class="card-body">

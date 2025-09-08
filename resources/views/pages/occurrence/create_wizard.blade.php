@@ -6,52 +6,7 @@
 
 @section('content')
 <div class="container-xxl">
-  <h1 class="mb-3">Nueva Occurrence (Wizard)</h1>
-
-  {{-- Navegación por pestañas --}}
-  <ul class="nav nav-tabs" id="occTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="tab-occurrence-tab" data-bs-toggle="tab"
-              data-bs-target="#tab-occurrence" type="button" role="tab">
-        1) Occurrence
-      </button>
-    </li>
-
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-record-level-tab" data-bs-toggle="tab"
-              data-bs-target="#tab-record-level" type="button" role="tab">
-        2) Record level
-      </button>
-    </li>
-
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-organism-tab" data-bs-toggle="tab"
-              data-bs-target="#tab-organism" type="button" role="tab">
-        3) Organism
-      </button>
-    </li>
-
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-location-tab" data-bs-toggle="tab"
-              data-bs-target="#tab-location" type="button" role="tab">
-        4) Location
-      </button>
-    </li>
-
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-taxon-tab" data-bs-toggle="tab"
-              data-bs-target="#tab-taxon" type="button" role="tab">
-        5) Taxon
-      </button>
-    </li>
-
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-identification-tab" data-bs-toggle="tab"
-              data-bs-target="#tab-identification" type="button" role="tab">
-        6) Identification
-      </button>
-    </li>
-  </ul>
+  <h1 class="mb-3">Nueva Occurrence</h1>
 
   @push('scripts')
     <script>
@@ -152,13 +107,6 @@
       <form id="occ-form" method="POST" action="{{ route('occurrence.store') }}">
         @csrf
 
-        {{-- ***** IDs ocultos que se rellenan desde otras pestañas ***** --}}
-       {{--  <input type="hidden" name="record_level_id" id="record_level_id" value="{{ old('record_level_id') }}">
-        <input type="hidden" name="organismID"       id="organismID"       value="{{ old('organismID') }}">
-        <input type="hidden" name="locationID"       id="locationID"       value="{{ old('locationID') }}">
-        <input type="hidden" name="taxonID"          id="taxonID"          value="{{ old('taxonID') }}">
-        <input type="hidden" name="identificationID" id="identificationID" value="{{ old('identificationID') }}">
- --}}
         {{-- Resumen de selección actual --}}
         <div class="alert alert-secondary small" role="alert">
           <div class="mb-1 fw-bold">Selecciones vinculadas:</div>
@@ -322,7 +270,7 @@
           <div class="col-md-4">
             <label class="label" for="occurrenceID">OccurrenceID</label>
             <input type="text" name="occurrenceID" id="occurrenceID" class="input"
-                   value="{{ old('occurrenceID') }}"
+                    value="{{ old('occurrenceID', $item->occurrenceID ?? '') }}"
                    placeholder="Ingrese su OccurrenceID">
             @error('occurrenceID') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
@@ -340,28 +288,28 @@
           <div class="col-md-4">
             <label class="label" for="recordNumber">Record Number</label>
             <input type="text" name="recordNumber" id="recordNumber" class="input"
-                   value="{{ old('recordNumber') }}">
+                   value="{{ old('recordNumber', $item->recordNumber ?? '') }}">
             @error('recordNumber') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
           <div class="col-md-4">
             <label class="label" for="recordedBy">Recorded By</label>
             <input type="text" name="recordedBy" id="recordedBy" class="input"
-                   value="{{ old('recordedBy') }}">
+                   value="{{ old('recordedBy', $item->recordedBy ?? '') }}">
             @error('recordedBy') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
           <div class="col-md-4">
             <label class="label" for="individualCount">Individual Count</label>
             <input type="number" name="individualCount" id="individualCount" class="input"
-                   value="{{ old('individualCount') }}">
+                   value="{{ old('individualCount', $item->individualCount ?? '') }}">
             @error('individualCount') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
           <div class="col-md-4">
             <label class="label" for="organismQuantity">Organism Quantity</label>
             <input type="number" step="any" name="organismQuantity" id="organismQuantity" class="input"
-                   value="{{ old('organismQuantity') }}">
+                   value="{{ old('organismQuantity', $item->organismQuantity ?? '') }}">
             @error('organismQuantity') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
@@ -369,10 +317,15 @@
           <div class="col-md-4">
             <label class="label" for="organismQuantityType">Organism Quantity Type *</label>
             <select name="organismQuantityType" id="organismQuantityType" class="input">
-              <option value="">— Selecciona —</option>
+              <option value=""
+                @selected(old('organismQuantityType', $item->organismQuantityType ?? null) === null)>
+                — Selecciona —
+              </option>
+
               @foreach($oqtypes as $opt)
-                <option value="{{ $opt->oqtype_id }}" @selected(old('organismQuantityType') == $opt->oqtype_id)>
-                  {{ $opt->oqtype_value }}@if($opt->description) — {{ \Illuminate\Support\Str::limit($opt->description,50) }}@endif
+                <option value="{{ $opt->oqtype_id }}"
+                  @selected((int) old('organismQuantityType', $item->organismQuantityType ?? 0) === (int) $opt->oqtype_id)>
+                  {{ $opt->oqtype_value }}
                 </option>
               @endforeach
             </select>
@@ -384,7 +337,8 @@
             <select name="sex" id="sex" class="input">
               <option value="">— Selecciona —</option>
               @foreach($sexes as $opt)
-                <option value="{{ $opt->sex_id }}" @selected(old('sex') == $opt->sex_id)>
+                <option value="{{ $opt->sex_id }}"
+                  @selected((int) old('sex', $item->sex ?? 0) === (int) $opt->sex_id)>
                   {{ $opt->sex_value }}
                 </option>
               @endforeach
@@ -397,7 +351,8 @@
             <select name="lifeStage" id="lifeStage" class="input">
               <option value="">— Selecciona —</option>
               @foreach($lifeStages as $opt)
-                <option value="{{ $opt->lifestage_id }}" @selected(old('lifeStage') == $opt->lifestage_id)>
+                <option value="{{ $opt->lifestage_id }}"
+                  @selected((int) old('lifeStage', $item->lifeStage ?? 0) === (int) $opt->lifestage_id)>
                   {{ $opt->lifestage_value }}
                 </option>
               @endforeach
@@ -410,7 +365,8 @@
             <select name="reproductiveCondition" id="reproductiveCondition" class="input">
               <option value="">— Selecciona —</option>
               @foreach($reproConds as $opt)
-                <option value="{{ $opt->reprocond_id }}" @selected(old('reproductiveCondition') == $opt->reprocond_id)>
+                <option value="{{ $opt->reprocond_id }}"
+                  @selected((int) old('reproductiveCondition', $item->reproductiveCondition ?? 0) === (int) $opt->reprocond_id)>
                   {{ $opt->reprocond_value }}
                 </option>
               @endforeach
@@ -423,7 +379,8 @@
             <select name="establishmentMeans" id="establishmentMeans" class="input">
               <option value="">— Selecciona —</option>
               @foreach($estabMeans as $opt)
-                <option value="{{ $opt->estabmeans_id }}" @selected(old('establishmentMeans') == $opt->estabmeans_id)>
+                <option value="{{ $opt->estabmeans_id }}"
+                  @selected((int) old('establishmentMeans', $item->establishmentMeans ?? 0) === (int) $opt->estabmeans_id)>
                   {{ $opt->estabmeans_value }}
                 </option>
               @endforeach
@@ -436,7 +393,8 @@
             <select name="disposition" id="disposition" class="input">
               <option value="">— Selecciona —</option>
               @foreach($dispositions as $opt)
-                <option value="{{ $opt->disposition_id }}" @selected(old('disposition') == $opt->disposition_id)>
+                <option value="{{ $opt->disposition_id }}"
+                  @selected((int) old('disposition', $item->disposition ?? 0) === (int) $opt->disposition_id)>
                   {{ $opt->disposition_value }}
                 </option>
               @endforeach
@@ -447,49 +405,49 @@
           {{-- Textos largos --}}
           <div class="col-md-4">
             <label class="label" for="behavior">Behavior</label>
-            <textarea name="behavior" id="behavior" rows="2" class="input">{{ old('behavior') }}</textarea>
+            <textarea name="behavior" id="behavior" rows="2" class="input">{{ old('behavior', $item->behavior ?? '') }}</textarea>
             @error('behavior') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
           <div class="col-md-4">
             <label class="label" for="substrate">Substrate</label>
-            <textarea name="substrate" id="substrate" rows="2" class="input">{{ old('substrate') }}</textarea>
+            <textarea name="substrate" id="substrate" rows="2" class="input">{{ old('substrate', $item->substrate ?? '') }}</textarea>
             @error('substrate') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
           <div class="col-md-4">
             <label class="label" for="preparations">Preparations</label>
-            <textarea name="preparations" id="preparations" rows="2" class="input">{{ old('preparations') }}</textarea>
+            <textarea name="preparations" id="preparations" rows="2" class="input">{{ old('preparations', $item->preparations ?? '') }}</textarea>
             @error('preparations') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
           <div class="col-md-4">
             <label class="label" for="associatedMedia">Associated media</label>
-            <textarea name="associatedMedia" id="associatedMedia" rows="2" class="input">{{ old('associatedMedia') }}</textarea>
+            <textarea name="associatedMedia" id="associatedMedia" rows="2" class="input">{{ old('associatedMedia', $item->associatedMedia ?? '') }}</textarea>
             @error('associatedMedia') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
           <div class="col-md-4">
             <label class="label" for="associatedSequences">Associated sequences</label>
-            <textarea name="associatedSequences" id="associatedSequences" rows="2" class="input">{{ old('associatedSequences') }}</textarea>
+            <textarea name="associatedSequences" id="associatedSequences" rows="2" class="input">{{ old('associatedSequences', $item->associatedSequences ?? '') }}</textarea>
             @error('associatedSequences') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
           <div class="col-md-4">
             <label class="label" for="associatedTaxa">Associated taxa</label>
-            <textarea name="associatedTaxa" id="associatedTaxa" rows="2" class="input">{{ old('associatedTaxa') }}</textarea>
+            <textarea name="associatedTaxa" id="associatedTaxa" rows="2" class="input">{{ old('associatedTaxa', $item->associatedTaxa ?? '') }}</textarea>
             @error('associatedTaxa') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
           <div class="col-md-4">
             <label class="label" for="otherCatalogNumbers">Other catalog numbers</label>
-            <textarea name="otherCatalogNumbers" id="otherCatalogNumbers" rows="2" class="input">{{ old('otherCatalogNumbers') }}</textarea>
+            <textarea name="otherCatalogNumbers" id="otherCatalogNumbers" rows="2" class="input">{{ old('otherCatalogNumbers', $item->otherCatalogNumbers ?? '') }}</textarea>
             @error('otherCatalogNumbers') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
           <div class="col-md-4">
             <label class="label" for="occurrenceRemarks">Occurrence remarks</label>
-            <textarea name="occurrenceRemarks" id="occurrenceRemarks" rows="2" class="input">{{ old('occurrenceRemarks') }}</textarea>
+            <textarea name="occurrenceRemarks" id="occurrenceRemarks" rows="2" class="input">{{ old('occurrenceRemarks', $item->occurrenceRemarks ?? '') }}</textarea>
             @error('occurrenceRemarks') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
         </div>
@@ -1283,7 +1241,7 @@
             const el = document.createElement('div');
             el.className = `toast align-items-center text-bg-${variant} border-0`;
             el.setAttribute('role','alert');
-            el.setAttribute('aria-live','assertive');
+            el.setAttribute(function unlockBodyScrollIfNoModal()'aria-live','assertive');
             el.setAttribute('aria-atomic','true');
             el.innerHTML = `
               <div class="d-flex">
@@ -1564,16 +1522,6 @@
               t.show(); el.addEventListener('hidden.bs.toast', () => el.remove());
             }
 
-            /* function closeIdnModal() {
-              const el = document.getElementById('modal-identification'); if (!el) return;
-              let inst = window.bootstrap?.Modal.getInstance(el) || window.bootstrap?.Modal.getOrCreateInstance(el);
-              if (inst) inst.hide(); else {
-                el.classList.remove('show'); el.style.display='none';
-                document.body.classList.remove('modal-open'); document.body.style.removeProperty('padding-right');
-                document.querySelectorAll('.modal-backdrop').forEach(b=>b.remove());
-              }
-            } */
-
             document.addEventListener('hidden.bs.modal', () => {
               if (!document.querySelector('.modal.show')) {
                 document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
@@ -1796,9 +1744,6 @@
             makeFallbackLabel: id => id
           }
 
-          // Si luego agregas Taxon / Identification:
-          // { kind:'taxon', hiddenId:'taxonID', labelId:'taxon_label', summaryId:'summary-tax', draftKey:'taxonID', linkKey:'taxon', makeFallbackLabel:id=>id },
-          // { kind:'identification', hiddenId:'identificationID', labelId:'identification_label', summaryId:'summary-id', draftKey:'identificationID', linkKey:'identification', makeFallbackLabel:id=>id },
         ];
 
         function getEl(id){ return document.getElementById(id); }
@@ -1851,179 +1796,6 @@
       })();
       </script>
       @endpush
-
-
-    {{---------- FIN DE SCRIPTS PARA POBLAR LOS COMBOS CON DATA DE LOCALSTORAGE -------}}    
-
-    {{---------- INICIO DE SCRIPTS PARA VALIDAR CAMPOS HIDDEN -------}}   
-      {{-- @push('scripts')
-        <script>
-          (function () {
-            const form = document.getElementById('occ-form'); // id de tu form principal
-            if (!form) return;
-
-            form.addEventListener('submit', function (e) {
-              const requiredIds = [
-                ['record_level_id','record_level_label','Debes seleccionar un Record level'],
-                ['organismID','organism_label','Debes seleccionar un Organism'],
-                ['locationID','location_label','Debes seleccionar un Location'],
-                ['taxonID','taxon_label','Debes seleccionar un Taxon'],
-                ['identificationID','identification_label','Debes seleccionar un Identification'],
-              ];
-
-              let firstInvalid = null;
-
-              requiredIds.forEach(([hiddenId, labelId, msg]) => {
-                const hid = document.getElementById(hiddenId);
-                const lab = document.getElementById(labelId);
-                const has = (hid?.value || '').trim().length > 0;
-
-                // limpia estado previo
-                lab?.classList.remove('is-invalid');
-                const fbSel = lab?.nextElementSibling;
-                if (fbSel && fbSel.classList.contains('invalid-feedback')) fbSel.remove();
-
-                if (!has) {
-                  if (lab) {
-                    lab.classList.add('is-invalid');
-                    const fb = document.createElement('div');
-                    fb.className = 'invalid-feedback d-block';
-                    fb.textContent = msg;
-                    lab.insertAdjacentElement('afterend', fb);
-                  }
-                  if (!firstInvalid) firstInvalid = lab || hid;
-                }
-              });
-
-              if (firstInvalid) {
-                e.preventDefault();
-                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }
-            });
-          })();
-        </script>
-      @endpush --}}
-
-      {{-- @push('scripts')
-        <script>
-        (function () {
-          // Mapea cada entidad con sus IDs de elementos y la clave usada en localStorage
-          const MAP = {
-            rl:  { hid: 'record_level_id',     lab: 'record_level_label',     sum: 'summary-rl',  key: 'record_level' },
-            org: { hid: 'organismID',          lab: 'organism_label',         sum: 'summary-org', key: 'organism' },
-            loc: { hid: 'locationID',          lab: 'location_label',         sum: 'summary-loc', key: 'location' },
-            tax: { hid: 'taxonID',             lab: 'taxon_label',            sum: 'summary-tax', key: 'taxon' },
-            idn: { hid: 'identificationID',    lab: 'identification_label',   sum: 'summary-id',  key: 'identification' },
-          };
-
-          function setPair(kind, id, label) {
-            const cfg = MAP[kind]; if (!cfg) return;
-            const $hid = document.getElementById(cfg.hid);
-            const $lab = document.getElementById(cfg.lab);
-            const $sum = document.getElementById(cfg.sum);
-
-            if ($hid) $hid.value = id || '';
-            const labelText = label || (id ? '#'+id : '');
-            if ($lab) $lab.value = labelText;
-            if ($sum) $sum.textContent = labelText || '—';
-
-            // Persistimos el vínculo (para restaurar tras recarga)
-            try {
-              const links = JSON.parse(localStorage.getItem('occ_wizard_links_v2') || '{}');
-              if (id) {
-                links[cfg.key] = { id, label: labelText };
-              } else {
-                delete links[cfg.key];
-              }
-              localStorage.setItem('occ_wizard_links_v2', JSON.stringify(links));
-            } catch {}
-          }
-
-          // Restaura en carga: si el hidden ya tiene valor (old()/modelo), usa eso.
-          // Si no, intenta desde localStorage.
-          function restoreOne(kind) {
-            const cfg = MAP[kind]; if (!cfg) return;
-            const $hid = document.getElementById(cfg.hid);
-            const $lab = document.getElementById(cfg.lab);
-            const $sum = document.getElementById(cfg.sum);
-
-            let id = ($hid?.value || '').trim();
-            let label = ($lab?.value || '').trim();
-
-            if (!id) {
-              try {
-                const links = JSON.parse(localStorage.getItem('occ_wizard_links_v2') || '{}');
-                const saved = links?.[cfg.key];
-                if (saved?.id) {
-                  id = saved.id;
-                  label = saved.label || ('#'+id);
-                  if ($hid) $hid.value = id;
-                }
-              } catch {}
-            }
-
-            if (id && $lab && !label) label = '#'+id;
-            if ($lab && label) $lab.value = label;
-            if ($sum) $sum.textContent = label || (id ? '#'+id : '—');
-          }
-
-          ['rl','org','loc','tax','idn'].forEach(restoreOne);
-
-          // Exponer funciones globales para que las modales las invoquen al guardar/seleccionar:
-          window.applyRecordLevel     = (id, label) => setPair('rl',  id, label);
-          window.applyOrganism        = (id, label) => setPair('org', id, label);
-          window.applyLocation        = (id, label) => setPair('loc', id, label);
-          window.applyTaxon           = (id, label) => setPair('tax', id, label);
-          window.applyIdentification  = (id, label) => setPair('idn', id, label);
-
-          // (Opcional) Validación rápida antes de submit: exige que los hidden tengan valor
-          const form = document.getElementById('occ-form'); // id de tu <form> principal
-          if (form) {
-            form.addEventListener('submit', function (e) {
-              const req = [
-                ['rl',  'Debes seleccionar un Record level'],
-                ['org', 'Debes seleccionar un Organism'],
-                ['loc', 'Debes seleccionar un Location'],
-                ['tax', 'Debes seleccionar un Taxon'],
-                ['idn', 'Debes seleccionar un Identification'],
-              ];
-              let first = null;
-
-              req.forEach(([kind, msg]) => {
-                const cfg = MAP[kind];
-                const $hid = document.getElementById(cfg.hid);
-                const $lab = document.getElementById(cfg.lab);
-                const has = ($hid?.value || '').trim().length > 0;
-
-                // limpia feedback previo
-                if ($lab) {
-                  $lab.classList.remove('is-invalid');
-                  const sib = $lab.nextElementSibling;
-                  if (sib && sib.classList.contains('invalid-feedback')) sib.remove();
-                }
-
-                if (!has) {
-                  if ($lab) {
-                    $lab.classList.add('is-invalid');
-                    const fb = document.createElement('div');
-                    fb.className = 'invalid-feedback d-block';
-                    fb.textContent = msg;
-                    $lab.insertAdjacentElement('afterend', fb);
-                  }
-                  if (!first) first = $lab || $hid;
-                }
-              });
-
-              if (first) {
-                e.preventDefault();
-                first.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }
-            });
-          }
-        })();
-        </script>
-      @endpush --}}
-
 
      {{---------- FIN DE SCRIPTS PARA VALIDAR CAMPOS HIDDEN -------}}    
 
@@ -2334,11 +2106,6 @@
     form.addEventListener('input',  save);
     form.addEventListener('change', save);
 
-    // Si el form envía (sea AJAX o clásico), limpiamos ese draft
-    /* form.addEventListener('submit', () => {
-      localStorage.removeItem(storageKey);
-      dirty = false;
-    }); */
   }
 
   // Registrar autosave para TODOS los tabs
@@ -2381,19 +2148,6 @@
     const data = await res.json(); // {id, label?}
     if (typeof onOk === 'function') onOk(data);
   }
-
-  // Record level
-/*   const rlForm = document.getElementById('rl-form');
-  if (rlForm) rlForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await postForm(rlForm, ({id, label}) => {
-      setLink('record_level', id, label || ('#'+id));
-      alert('Record level guardado y asignado 1: '+id);
-      // Volver al tab Occurrence
-      const trigger = document.querySelector('[data-bs-target="#tab-occurrence"], a[href="#tab-occurrence"]');
-      if (trigger && window.bootstrap?.Tab) new bootstrap.Tab(trigger).show();
-    });
-  }); */
 
   // Organism
   const orgForm = document.getElementById('organism-form');
@@ -2491,5 +2245,40 @@ function unlockBodyScrollIfNoModal() {
   window.unlockBodyScrollIfNoModal = unlockBodyScrollIfNoModal;
 
 </script>
+
+<script>
+(function () {
+  const IS_EDIT = @json(isset($item) && $item->exists);
+  const OCC_ID  = @json(isset($item) ? $item->id_occ_bd : null);
+  const KEY_OCC = IS_EDIT ? `occ_wizard_occurrence_v2:${OCC_ID}` : 'occ_wizard_occurrence_v2';
+
+  function safeRestore(draft) {
+    for (const [name, val] of Object.entries(draft)) {
+      const el = document.querySelector(`[name="${name}"]`);
+      if (!el) continue;
+
+      // Si es select, no sobreescribir si ya hay una opción seleccionada distinta de vacío
+      if (el.tagName === 'SELECT') {
+        const hasSelected = Array.from(el.options).some(o => o.selected && o.value !== '');
+        if (hasSelected) continue;
+      } else {
+        // Para inputs normales, no pises si ya trae valor del servidor
+        if (el.value != null && String(el.value).trim() !== '') continue;
+      }
+
+      if (val != null && String(val).trim() !== '') el.value = val;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
+      const draft = JSON.parse(localStorage.getItem(KEY_OCC) || '{}');
+      safeRestore(draft);
+    } catch {}
+  });
+})();
+</script>
+
+
 @endpush
 

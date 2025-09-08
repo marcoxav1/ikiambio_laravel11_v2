@@ -163,7 +163,6 @@ class OccurrenceController extends Controller
             'organismID'         => ['required','string','max:255', Rule::exists('organism','organismID')],
             'locationID'         => ['required','string','max:255', Rule::exists('location','locationID')],
             'taxonID'            => ['required','string','max:255', Rule::exists('taxon','taxonID')],
-            'identificationID'   => ['required','string','max:255','unique:occurrence,identificationID', Rule::exists('identification','identificationID')],
             
             // Requeridos de vocab
             'organismQuantityType' => ['required','integer', Rule::exists('vocab_occurrence_organismQuantityType','oqtype_id')],
@@ -221,7 +220,129 @@ class OccurrenceController extends Controller
         return view('pages.occurrence.show', ['item' => $occurrence]);
     }
 
-    public function edit(Occurrence $occurrence)
+    public function edit(\App\Models\Occurrence $occurrence)
+    {
+        // ===== Catálogos para pestaña Occurrence (vocab obligatorios) =====
+        $oqtypes      = \App\Models\Vocab\Occurrence\Organismquantitytype::orderBy('oqtype_value')
+                            ->get(['oqtype_id','oqtype_value']);
+        $sexes        = \App\Models\Vocab\Occurrence\Sex::orderBy('sex_value')
+                            ->get(['sex_id','sex_value']);
+        $lifeStages   = \App\Models\Vocab\Occurrence\Lifestage::orderBy('lifestage_value')
+                            ->get(['lifestage_id','lifestage_value']);
+        $reproConds   = \App\Models\Vocab\Occurrence\Reproductivecondition::orderBy('reprocond_value')
+                            ->get(['reprocond_id','reprocond_value']);
+        $estabMeans   = \App\Models\Vocab\Occurrence\Establishmentmeans::orderBy('estabmeans_value')
+                            ->get(['estabmeans_id','estabmeans_value']);
+        $dispositions = \App\Models\Vocab\Occurrence\Disposition::orderBy('disposition_value')
+                            ->get(['disposition_id','disposition_value']);
+
+        // ===== Catálogos para pestaña Record level =====
+        $types                 = \App\Models\Vocab\RecordLevel\Type::orderBy('type_value')
+                                    ->get(['type_id','type_value']);
+        $licenses              = \App\Models\Vocab\RecordLevel\License::orderBy('license_value')
+                                    ->get(['license_id','license_value']);
+        $rightsHolders         = \App\Models\Vocab\RecordLevel\Rightsholder::orderBy('rightsHolder_value')
+                                    ->get(['rightsHolder_id','rightsHolder_value']);
+        $accessRights          = \App\Models\Vocab\RecordLevel\Accessrights::orderBy('accessrights_value')
+                                    ->get(['accessrights_id','accessrights_value']);
+        $institutionIds        = \App\Models\Vocab\RecordLevel\Institutionid::orderBy('institutionID_value')
+                                    ->get(['institution_id','institutionID_value']);
+        $collectionIds         = \App\Models\Vocab\RecordLevel\Collectionid::orderBy('collection_value')
+                                    ->get(['collection_id','collection_value']);
+        $institutionCodes      = \App\Models\Vocab\RecordLevel\Institutioncode::orderBy('institutionCode_value')
+                                    ->get(['institutionCode_id','institutionCode_value']);
+        $collectionCodes       = \App\Models\Vocab\RecordLevel\Collectioncode::orderBy('collectionCode_value')
+                                    ->get(['collectionCode_id','collectionCode_value']);
+        $ownerInstitutionCodes = \App\Models\Vocab\RecordLevel\Ownerinstitutioncode::orderBy('ownerinstitutioncode_value')
+                                    ->get(['ownerinstitutioncode_id','ownerinstitutioncode_value']);
+        $basisOfRecords        = \App\Models\Vocab\RecordLevel\Basisofrecord::orderBy('basisofrecord_value')
+                                    ->get(['basisofrecord_id','basisofrecord_value']);
+
+        // ===== Catálogos para pestaña Location (si tu modal/partial los usa) =====
+        $continents     = \App\Models\Vocab\Location\Continent::orderBy('continent_value')
+                                ->get(['continent_id','continent_value']);
+        $verbatimSrs    = \App\Models\Vocab\Location\Verbatimsrs::orderBy('verbatimSRS_value')
+                                ->get(['verbatimSRS_id','verbatimSRS_value']);
+        $georefStatuses = \App\Models\Vocab\Location\Georefstatus::orderBy('georef_status_value')
+                                ->get(['georef_status_id','georef_status_value']);
+
+        // ===== Catálogos para pestaña Taxon =====
+        $taxonRanks        = \App\Models\Vocab\Taxon\TaxonRank::orderBy('taxonRank_value')
+                                ->get(['taxonRank_id','taxonRank_value']);
+        $taxonomicStatuses = \App\Models\Vocab\Taxon\TaxonomicStatus::orderBy('taxonomicStatus_value')
+                                ->get(['taxonomicStatus_id','taxonomicStatus_value']);
+
+        // ===== Catálogos para pestaña Identification =====
+        $typeStatuses = \App\Models\Vocab\Identification\TypeStatus::orderBy('typeStatus_value')
+                            ->get(['vocab_identification_typeStatus_id','typeStatus_value']);
+        $verificationStatuses = \App\Models\Vocab\Identification\VerificationStatus::orderBy('identificationVerificationStatus_value')
+                            ->get(['vocab_identification_verificationStatus_id','identificationVerificationStatus_value']);
+
+        // (Opcional) listado corto para buscador de RL
+        $recordLevels = \App\Models\RecordLevel::orderByDesc('record_level_id')
+                            ->limit(50)
+                            ->get(['record_level_id','datasetName']);
+
+        // ===== IDs actuales (lo que la vista necesita para los hidden) =====
+        $rlId  = $occurrence->record_level_id ?? '';
+        $orgId = $occurrence->organismID ?? '';
+        $locId = $occurrence->locationID ?? '';
+        $taxId = $occurrence->taxonID ?? '';
+        $idnId = $occurrence->identificationID ?? '';
+
+        return view('pages.occurrence.create_wizard', [
+            // El registro a editar: trae todos los campos de tu $fillable
+            'item'                 => $occurrence,
+
+            // Catálogos Occurrence
+            'oqtypes'              => $oqtypes,
+            'sexes'                => $sexes,
+            'lifeStages'           => $lifeStages,
+            'reproConds'           => $reproConds,
+            'estabMeans'           => $estabMeans,
+            'dispositions'         => $dispositions,
+
+            // Catálogos Record Level
+            'types'                => $types,
+            'licenses'             => $licenses,
+            'rightsHolders'        => $rightsHolders,
+            'accessRights'         => $accessRights,
+            'institutionIds'       => $institutionIds,
+            'collectionIds'        => $collectionIds,
+            'institutionCodes'     => $institutionCodes,
+            'collectionCodes'      => $collectionCodes,
+            'ownerInstitutionCodes'=> $ownerInstitutionCodes,
+            'basisOfRecords'       => $basisOfRecords,
+
+            // Catálogos Location
+            'continents'           => $continents,
+            'verbatimSrs'          => $verbatimSrs,
+            'georefStatuses'       => $georefStatuses,
+
+            // Catálogos Taxon
+            'taxonRanks'           => $taxonRanks,
+            'taxonomicStatuses'    => $taxonomicStatuses,
+
+            // Catálogos Identification
+            'typeStatuses'         => $typeStatuses,
+            'verificationStatuses' => $verificationStatuses,
+
+            // Auxiliar
+            'recordLevels'         => $recordLevels,
+
+            // Solo IDs para los vínculos (como pediste)
+            'rlId'                 => $rlId,
+            'orgId'                => $orgId,
+            'locId'                => $locId,
+            'taxId'                => $taxId,
+            'idnId'                => $idnId,
+        ]);
+    }
+
+
+
+
+    public function edit2(Occurrence $occurrence)
     {
         // …los mismos loads que arriba…
         $recordLevels   = RecordLevel::orderBy('record_level_id','desc')->get(['record_level_id','datasetName']);
@@ -244,6 +365,8 @@ class OccurrenceController extends Controller
             'recordLevels','oqtypes','sexes','lifeStages','reproConds','estabMeans','dispositions',
             'continents','verbatimSrs','georefStatuses'
         ));
+
+        
     }
 
     public function update(Request $request, \App\Models\Occurrence $occurrence)
