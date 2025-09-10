@@ -222,124 +222,63 @@ class OccurrenceController extends Controller
 
     public function edit(\App\Models\Occurrence $occurrence)
     {
-        // ===== Catálogos para pestaña Occurrence (vocab obligatorios) =====
-        $oqtypes      = \App\Models\Vocab\Occurrence\Organismquantitytype::orderBy('oqtype_value')
-                            ->get(['oqtype_id','oqtype_value']);
-        $sexes        = \App\Models\Vocab\Occurrence\Sex::orderBy('sex_value')
-                            ->get(['sex_id','sex_value']);
-        $lifeStages   = \App\Models\Vocab\Occurrence\Lifestage::orderBy('lifestage_value')
-                            ->get(['lifestage_id','lifestage_value']);
-        $reproConds   = \App\Models\Vocab\Occurrence\Reproductivecondition::orderBy('reprocond_value')
-                            ->get(['reprocond_id','reprocond_value']);
-        $estabMeans   = \App\Models\Vocab\Occurrence\Establishmentmeans::orderBy('estabmeans_value')
-                            ->get(['estabmeans_id','estabmeans_value']);
-        $dispositions = \App\Models\Vocab\Occurrence\Disposition::orderBy('disposition_value')
-                            ->get(['disposition_id','disposition_value']);
+        // ===== Catálogos para la pestaña Occurrence =====
+        $oqtypes      = \App\Models\Vocab\Occurrence\Organismquantitytype::orderBy('oqtype_value')->get(['oqtype_id','oqtype_value','description']);
+        $sexes        = \App\Models\Vocab\Occurrence\Sex::orderBy('sex_value')->get(['sex_id','sex_value','description']);
+        $lifeStages   = \App\Models\Vocab\Occurrence\Lifestage::orderBy('lifestage_value')->get(['lifestage_id','lifestage_value','description']);
+        $reproConds   = \App\Models\Vocab\Occurrence\Reproductivecondition::orderBy('reprocond_value')->get(['reprocond_id','reprocond_value','description']);
+        $estabMeans   = \App\Models\Vocab\Occurrence\Establishmentmeans::orderBy('estabmeans_value')->get(['estabmeans_id','estabmeans_value','description']);
+        $dispositions = \App\Models\Vocab\Occurrence\Disposition::orderBy('disposition_value')->get(['disposition_id','disposition_value','description']);
 
-        // ===== Catálogos para pestaña Record level =====
-        $types                 = \App\Models\Vocab\RecordLevel\Type::orderBy('type_value')
-                                    ->get(['type_id','type_value']);
-        $licenses              = \App\Models\Vocab\RecordLevel\License::orderBy('license_value')
-                                    ->get(['license_id','license_value']);
-        $rightsHolders         = \App\Models\Vocab\RecordLevel\Rightsholder::orderBy('rightsHolder_value')
-                                    ->get(['rightsHolder_id','rightsHolder_value']);
-        $accessRights          = \App\Models\Vocab\RecordLevel\Accessrights::orderBy('accessrights_value')
-                                    ->get(['accessrights_id','accessrights_value']);
-        $institutionIds        = \App\Models\Vocab\RecordLevel\Institutionid::orderBy('institutionID_value')
-                                    ->get(['institution_id','institutionID_value']);
-        $collectionIds         = \App\Models\Vocab\RecordLevel\Collectionid::orderBy('collection_value')
-                                    ->get(['collection_id','collection_value']);
-        $institutionCodes      = \App\Models\Vocab\RecordLevel\Institutioncode::orderBy('institutionCode_value')
-                                    ->get(['institutionCode_id','institutionCode_value']);
-        $collectionCodes       = \App\Models\Vocab\RecordLevel\Collectioncode::orderBy('collectionCode_value')
-                                    ->get(['collectionCode_id','collectionCode_value']);
-        $ownerInstitutionCodes = \App\Models\Vocab\RecordLevel\Ownerinstitutioncode::orderBy('ownerinstitutioncode_value')
-                                    ->get(['ownerinstitutioncode_id','ownerinstitutioncode_value']);
-        $basisOfRecords        = \App\Models\Vocab\RecordLevel\Basisofrecord::orderBy('basisofrecord_value')
-                                    ->get(['basisofrecord_id','basisofrecord_value']);
+        // ===== Catálogos para Record Level =====
+        $types                 = \App\Models\Vocab\RecordLevel\Type::orderBy('type_value')->get(['type_id','type_value','description']);
+        $licenses              = \App\Models\Vocab\RecordLevel\License::orderBy('license_value')->get(['license_id','license_value','description']);
+        $rightsHolders         = \App\Models\Vocab\RecordLevel\Rightsholder::orderBy('rightsHolder_value')->get(['rightsHolder_id','rightsHolder_value','description']);
+        $accessRights          = \App\Models\Vocab\RecordLevel\Accessrights::orderBy('accessrights_value')->get(['accessrights_id','accessrights_value','description']);
+        $institutionIds        = \App\Models\Vocab\RecordLevel\Institutionid::orderBy('institutionID_value')->get(['institution_id','institutionID_value','description']);
+        $collectionIds         = \App\Models\Vocab\RecordLevel\Collectionid::orderBy('collection_value')->get(['collection_id','collection_value','description']);
+        $institutionCodes      = \App\Models\Vocab\RecordLevel\Institutioncode::orderBy('institutionCode_value')->get(['institutionCode_id','institutionCode_value','description']);
+        $collectionCodes       = \App\Models\Vocab\RecordLevel\Collectioncode::orderBy('collectionCode_value')->get(['collectionCode_id','collectionCode_value','description']);
+        $ownerInstitutionCodes = \App\Models\Vocab\RecordLevel\Ownerinstitutioncode::orderBy('ownerinstitutioncode_value')->get(['ownerinstitutioncode_id','ownerinstitutioncode_value','description']);
+        $basisOfRecords        = \App\Models\Vocab\RecordLevel\Basisofrecord::orderBy('basisofrecord_value')->get(['basisofrecord_id','basisofrecord_value','description']);
 
-        // ===== Catálogos para pestaña Location (si tu modal/partial los usa) =====
-        $continents     = \App\Models\Vocab\Location\Continent::orderBy('continent_value')
-                                ->get(['continent_id','continent_value']);
-        $verbatimSrs    = \App\Models\Vocab\Location\Verbatimsrs::orderBy('verbatimSRS_value')
-                                ->get(['verbatimSRS_id','verbatimSRS_value']);
-        $georefStatuses = \App\Models\Vocab\Location\Georefstatus::orderBy('georef_status_value')
-                                ->get(['georef_status_id','georef_status_value']);
+        // ===== Catálogos para Location =====
+        $continents     = \App\Models\Vocab\Location\Continent::orderBy('continent_value')->get(['continent_id','continent_value']);
+        $verbatimSrs    = \App\Models\Vocab\Location\Verbatimsrs::orderBy('verbatimSRS_value')->get(['verbatimSRS_id','verbatimSRS_value']);
+        $georefStatuses = \App\Models\Vocab\Location\Georefstatus::orderBy('georef_status_value')->get(['georef_status_id','georef_status_value']);
 
-        // ===== Catálogos para pestaña Taxon =====
-        $taxonRanks        = \App\Models\Vocab\Taxon\TaxonRank::orderBy('taxonRank_value')
-                                ->get(['taxonRank_id','taxonRank_value']);
-        $taxonomicStatuses = \App\Models\Vocab\Taxon\TaxonomicStatus::orderBy('taxonomicStatus_value')
-                                ->get(['taxonomicStatus_id','taxonomicStatus_value']);
+        // ===== Catálogos para Taxon =====
+        $taxonRanks        = \App\Models\Vocab\Taxon\TaxonRank::orderBy('taxonRank_value')->get(['taxonRank_id','taxonRank_value']);
+        $taxonomicStatuses = \App\Models\Vocab\Taxon\TaxonomicStatus::orderBy('taxonomicStatus_value')->get(['taxonomicStatus_id','taxonomicStatus_value']);
 
-        // ===== Catálogos para pestaña Identification =====
-        $typeStatuses = \App\Models\Vocab\Identification\TypeStatus::orderBy('typeStatus_value')
-                            ->get(['vocab_identification_typeStatus_id','typeStatus_value']);
-        $verificationStatuses = \App\Models\Vocab\Identification\VerificationStatus::orderBy('identificationVerificationStatus_value')
-                            ->get(['vocab_identification_verificationStatus_id','identificationVerificationStatus_value']);
+        // ===== Catálogos para Identification =====
+        $idTypeStatuses        = \App\Models\Vocab\Identification\TypeStatus::orderBy('typeStatus_value')->get(['vocab_identification_typeStatus_id','typeStatus_value']);
+        $idVerifStatuses       = \App\Models\Vocab\Identification\VerificationStatus::orderBy('identificationVerificationStatus_value')->get(['vocab_identification_verificationStatus_id','identificationVerificationStatus_value']);
+        $typeStatuses          = $idTypeStatuses;       // mismos datos
+        $verificationStatuses  = $idVerifStatuses;      // mismos datos
 
-        // (Opcional) listado corto para buscador de RL
+        // Opcional: últimos RL para sugerencias/buscador
         $recordLevels = \App\Models\RecordLevel::orderByDesc('record_level_id')
-                            ->limit(50)
-                            ->get(['record_level_id','datasetName']);
+            ->limit(50)->get(['record_level_id','datasetName']);
 
-        // ===== IDs actuales (lo que la vista necesita para los hidden) =====
-        $rlId  = $occurrence->record_level_id ?? '';
-        $orgId = $occurrence->organismID ?? '';
-        $locId = $occurrence->locationID ?? '';
-        $taxId = $occurrence->taxonID ?? '';
-        $idnId = $occurrence->identificationID ?? '';
+        // === << clave: pasar $item >> ===
+        $item = $occurrence;
 
-        return view('pages.occurrence.create_wizard', [
-            // El registro a editar: trae todos los campos de tu $fillable
-            'item'                 => $occurrence,
-
-            // Catálogos Occurrence
-            'oqtypes'              => $oqtypes,
-            'sexes'                => $sexes,
-            'lifeStages'           => $lifeStages,
-            'reproConds'           => $reproConds,
-            'estabMeans'           => $estabMeans,
-            'dispositions'         => $dispositions,
-
-            // Catálogos Record Level
-            'types'                => $types,
-            'licenses'             => $licenses,
-            'rightsHolders'        => $rightsHolders,
-            'accessRights'         => $accessRights,
-            'institutionIds'       => $institutionIds,
-            'collectionIds'        => $collectionIds,
-            'institutionCodes'     => $institutionCodes,
-            'collectionCodes'      => $collectionCodes,
-            'ownerInstitutionCodes'=> $ownerInstitutionCodes,
-            'basisOfRecords'       => $basisOfRecords,
-
-            // Catálogos Location
-            'continents'           => $continents,
-            'verbatimSrs'          => $verbatimSrs,
-            'georefStatuses'       => $georefStatuses,
-
-            // Catálogos Taxon
-            'taxonRanks'           => $taxonRanks,
-            'taxonomicStatuses'    => $taxonomicStatuses,
-
-            // Catálogos Identification
-            'typeStatuses'         => $typeStatuses,
-            'verificationStatuses' => $verificationStatuses,
-
-            // Auxiliar
-            'recordLevels'         => $recordLevels,
-
-            // Solo IDs para los vínculos (como pediste)
-            'rlId'                 => $rlId,
-            'orgId'                => $orgId,
-            'locId'                => $locId,
-            'taxId'                => $taxId,
-            'idnId'                => $idnId,
-        ]);
+        return view('pages.occurrence.create_wizard', compact(
+            // Occurrence vocabs
+            'oqtypes','sexes','lifeStages','reproConds','estabMeans','dispositions',
+            // Record level vocabs
+            'types','licenses','rightsHolders','accessRights','institutionIds','collectionIds','institutionCodes','collectionCodes','ownerInstitutionCodes','basisOfRecords',
+            // Location vocabs
+            'continents','verbatimSrs','georefStatuses',
+            // Taxon vocabs
+            'taxonRanks','taxonomicStatuses',
+            // Identification vocabs
+            'idTypeStatuses','idVerifStatuses','typeStatuses','verificationStatuses',
+            // comunes
+            'recordLevels','item'
+        ));
     }
-
-
 
 
     public function edit2(Occurrence $occurrence)
@@ -374,14 +313,19 @@ class OccurrenceController extends Controller
         $data = $request->validate([
             'occurrenceID'       => ['required','string','max:255', Rule::unique('occurrence','occurrenceID')->ignore($occurrence->id_occ_bd, 'id_occ_bd')],
             'catalogNumber'      => ['required','string','max:255', Rule::unique('occurrence','catalogNumber')->ignore($occurrence->id_occ_bd, 'id_occ_bd')],
-            'record_level_id'    => ['required','integer', Rule::exists('record_level','record_level_id'),
-                                     Rule::unique('occurrence','record_level_id')->ignore($occurrence->id_occ_bd, 'id_occ_bd')],
+            'record_level_id'    => ['required','integer', 
+                Rule::exists('record_level','record_level_id'),
+                Rule::unique('occurrence','record_level_id')->ignore($occurrence->id_occ_bd, 'id_occ_bd')
+            ],
+            
             'organismID'         => ['required','string','max:255', Rule::exists('organism','organismID')],
             'locationID'         => ['required','string','max:255', Rule::exists('location','locationID')],
             'taxonID'            => ['required','string','max:255', Rule::exists('taxon','taxonID')],
-            'identificationID'   => ['required','string','max:255', Rule::exists('identification','identificationID'),
-                                    Rule::unique('occurrence','identificationID')->ignore($occurrence->id_occ_bd, 'id_occ_bd')],
-
+            'identificationID'   => ['required','string','max:255', 
+                Rule::exists('identification','identificationID'),
+                Rule::unique('occurrence','identificationID')->ignore($occurrence->id_occ_bd, 'id_occ_bd')
+            ], 
+            
             'organismQuantityType' => ['required','integer', Rule::exists('vocab_occurrence_organismQuantityType','oqtype_id')],
             'sex'                   => ['required','integer', Rule::exists('vocab_occurrence_sex','sex_id')],
             'lifeStage'             => ['required','integer', Rule::exists('vocab_occurrence_lifeStage','lifestage_id')],

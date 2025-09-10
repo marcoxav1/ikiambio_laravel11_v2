@@ -18,7 +18,7 @@ use App\Http\Controllers\Web\OccurrenceController;
 
 Route::get('occurrence/create-wizard', [OccurrenceController::class, 'createWizard'])
     ->name('occurrence.create-wizard');
-Route::get('occurrence/create_wizard', [OccurrenceController::class, 'createWizard']); 
+/* Route::get('occurrence/create_wizard', [OccurrenceController::class, 'createWizard']);  */
 
 // DESPUÉS el resource
 Route::resource('occurrence', OccurrenceController::class)

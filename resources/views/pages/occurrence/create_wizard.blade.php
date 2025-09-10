@@ -104,8 +104,16 @@
   <div class="tab-content border-start border-end border-bottom p-3">
     {{-- ============ TAB 1: OCCURRENCE (SOLO CAMPOS PROPIOS) ============ --}}
     <div class="tab-pane fade show active" id="tab-occurrence" role="tabpanel">
-      <form id="occ-form" method="POST" action="{{ route('occurrence.store') }}">
+      
+      @php $isEdit = isset($item) && $item->exists; @endphp
+      
+      {{-- <form id="occ-form" method="POST" action="{{ route('occurrence.store') }}"> --}}
+      <form id="occ-form" method="POST" action="{{ $isEdit ? route('occurrence.update',$item) : route('occurrence.store') }}">
         @csrf
+
+        {{-- Si es edición, usar método PATCH --}}
+        @if($isEdit) @method('PATCH') @endif
+
 
         {{-- Resumen de selección actual --}}
         <div class="alert alert-secondary small" role="alert">
@@ -1226,6 +1234,7 @@
             </div>
           </div>
         </div>
+
         @push('scripts')
         <script>
         (function () {
@@ -1241,7 +1250,7 @@
             const el = document.createElement('div');
             el.className = `toast align-items-center text-bg-${variant} border-0`;
             el.setAttribute('role','alert');
-            el.setAttribute(function unlockBodyScrollIfNoModal()'aria-live','assertive');
+            el.setAttribute('aria-live','assertive');
             el.setAttribute('aria-atomic','true');
             el.innerHTML = `
               <div class="d-flex">
@@ -1366,6 +1375,7 @@
           function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
 
           if ($q && $results) {
+
             const doSearch = debounce(async () => {
               const q = $q.value.trim();
               if (q.length < 2) { $results.innerHTML = ''; return; }
@@ -1400,7 +1410,7 @@
           });
         })();
         </script>
-        @endpush
+      @endpush
 
       {{--------------- FIN DEL PROCESO ---------------------}}  
 
