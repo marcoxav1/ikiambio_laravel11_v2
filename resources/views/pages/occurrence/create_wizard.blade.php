@@ -107,6 +107,76 @@
       
       @php $isEdit = isset($item) && $item->exists; @endphp
       
+      <script>
+        // 1) Flag global
+        window.IS_EDIT = {{ $isEdit ? 'true' : 'false' }};
+
+        // 2) Claves usadas por tu autosave (ajústalas si cambiaste nombres)
+        window.OCC_WIZ_KEYS = [
+          'occ_wizard_occurrence_v2',
+          'occ_wizard_record_level_v2',
+          'occ_wizard_organism_v2',
+          'occ_wizard_location_v2',
+          'occ_wizard_taxon_v2',
+          'occ_wizard_identification_v2',
+          'occ_wizard_links_v2',
+        ];
+
+        if (window.IS_EDIT) {
+          // Limpia una vez
+          try { window.OCC_WIZ_KEYS.forEach(k => localStorage.removeItem(k)); } catch {}
+
+          // 3) Impide que el código del wizard vuelva a leer/escribir esas claves
+          (function(ls){
+            if (!ls) return;
+            const origGet = ls.getItem.bind(ls);
+            const origSet = ls.setItem.bind(ls);
+            const origRem = ls.removeItem.bind(ls);
+
+            const isWizardKey = k => typeof k === 'string' && /^occ_wizard_/.test(k);
+
+            ls.getItem = function(k){ return isWizardKey(k) ? null : origGet(k); };
+            ls.setItem = function(k,v){ if (isWizardKey(k)) return; return origSet(k,v); };
+            // removeItem lo dejamos normal por si tu UI llama a "limpiar"
+            ls.removeItem = function(k){ return origRem(k); };
+          })(window.localStorage);
+        }
+      </script>
+
+      @if($isEdit)
+      <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          // Ajusta estos helpers a tus IDs reales de inputs/labels
+          function setPair(hiddenId, labelId, value, labelText = null) {
+            const h = document.getElementById(hiddenId);
+            const l = document.getElementById(labelId);
+            if (h && value != null && value !== '') h.value = value;
+            if (l && (labelText ?? value)) l.value = (labelText ?? value);
+          }
+
+          // Record level
+          setPair('record_level_id', 'record_level_label',
+            @json($item->record_level_id),
+            @json('#'.($item->record_level_id ?? '').($item->recordLevel?->datasetName ? ' — '.$item->recordLevel->datasetName : ''))
+          );
+
+          // Organism / Location / Taxon / Identification (sólo el ID)
+          setPair('organismID', 'organism_label', @json($item->organismID));
+          setPair('locationID', 'location_label', @json($item->locationID));
+          setPair('taxonID', 'taxon_label', @json($item->taxonID));
+          setPair('identificationID', 'identification_label', @json($item->identificationID));
+
+          // Si muestras resúmenes:
+          const sum = (id, txt) => { const el = document.getElementById(id); if (el && txt) el.textContent = txt; };
+          sum('summary-rl', document.getElementById('record_level_label')?.value || '—');
+          sum('summary-org', document.getElementById('organism_label')?.value || '—');
+          sum('summary-loc', document.getElementById('location_label')?.value || '—');
+          sum('summary-tax', document.getElementById('taxon_label')?.value || '—');
+          sum('summary-id',  document.getElementById('identification_label')?.value || '—');
+        });
+      </script>
+      @endif
+
       {{-- <form id="occ-form" method="POST" action="{{ route('occurrence.store') }}"> --}}
       <form id="occ-form" method="POST" action="{{ $isEdit ? route('occurrence.update',$item) : route('occurrence.store') }}">
         @csrf
