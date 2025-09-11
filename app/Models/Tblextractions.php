@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Tblextracciones extends Model
+class Tblextractions extends Model
 {
     protected $table = 'TblExtracciones';
     protected $primaryKey = 'idExtracciones';

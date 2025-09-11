@@ -60,8 +60,8 @@
     </dl>
 
     <div style="margin-top:12px;">
-      <a class="btn" href="{{ route('TblExtracciones.edit', $item) }}">Editar</a>
-      <a class="btn" href="{{ route('TblExtracciones.index') }}">Volver</a>
+      <a class="btn" href="{{ route('tbl-extractions.edit', $item) }}">Editar</a>
+      <a class="btn" href="{{ route('tbl-extractions.index') }}">Volver</a>
     </div>
   </div>
 </div>

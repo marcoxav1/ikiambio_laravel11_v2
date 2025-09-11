@@ -4,15 +4,21 @@
 @section('content')
 <h1 class="h4" style="margin:0 0 12px 0;">Nuevo — Measurementorfacts</h1>
 
-@if($errors->any())
-  <div class="alert alert-danger" style="border:1px solid #fecaca;background:#fee2e2;color:#7f1d1d;">
+@if (session('ok'))
+  <div class="alert alert-success">{{ session('ok') }}</div>
+@endif
+
+@if ($errors->any())
+  <div class="alert alert-danger">
     <ul class="mb-0">
-      @foreach($errors->all() as $e) <li>{ $e }</li> @endforeach
+      @foreach ($errors->all() as $err)
+        <li>{{ $err }}</li>
+      @endforeach
     </ul>
   </div>
 @endif
 
-<form method="POST" action="{{ route('measurementorfacts.store') }}" class="card card-body">
+<form method="POST" action="{{ route('measurement-or-facts.store') }}" class="card card-body">
   @csrf
 
   <div class="form-grid">
@@ -65,7 +71,7 @@
 
   <div style="margin-top:12px;">
     <button class="btn primary">Guardar</button>
-    <a href="{{ route('measurementorfacts.index') }}" class="btn">Cancelar</a>
+    <a href="{{ route('measurement-or-facts.index') }}" class="btn">Cancelar</a>
   </div>
 </form>
 @endsection

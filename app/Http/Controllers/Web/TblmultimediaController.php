@@ -1,19 +1,19 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Web;
 
-use App\Http\Controllers\Concerns\WrapsTransactions;
-use App\Models\Tblmultimedia;
+use App\Http\Controllers\Controller;
+use App\Models\TblMultimedia;
 use Illuminate\Http\Request;
-use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class TblmultimediaController extends Controller
 {
-    use WrapsTransactions;
-
     public function index()
     {
-        $items = Tblmultimedia::orderByDesc('id')->paginate(15);
+        $items = TblMultimedia::orderByDesc('idMultimedia')->paginate(15);
         return view('pages.tblmultimedia.index', compact('items'));
     }
 
@@ -24,43 +24,88 @@ class TblmultimediaController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->all();
+        $data = $request->validate([
+            // Si no envías idMultimedia, lo generamos
+            'idMultimedia' => ['nullable','string','max:255','unique:TblMultimedia,idMultimedia'],
+            'idRegistros'  => ['nullable','string','max:255'],
+            'type'         => ['nullable','string','max:255'],
+            'format'       => ['nullable','string','max:255'],
+            'identifier'   => ['nullable','string'],
+            'title'        => ['nullable','string','max:255'],
+            'description'  => ['nullable','string'],
+            'created'      => ['nullable','date'],
+            'creator'      => ['nullable','string','max:255'],
+            'contributor'  => ['nullable','string','max:255'],
+            'publisher'    => ['nullable','string','max:255'],
+            'license'      => ['nullable','string','max:255'],
+        ]);
+
         try {
-            $item = $this->tx(fn () => Tblmultimedia::create($data));
-            return redirect()->route('tblmultimedia.index')->with('ok','Creado');
-        } catch (QueryException $e) {
-            return back()->withErrors('No se pudo crear.')->withInput();
+            $item = DB::transaction(function () use ($data) {
+                if (empty($data['idMultimedia'])) {
+                    $data['idMultimedia'] = (string) Str::uuid();
+                }
+                return TblMultimedia::create($data);
+            });
+
+            return redirect()
+                ->route('tbl-multimedia.show', $item->idMultimedia)
+                ->with('ok', 'Multimedia creado');
+
+        } catch (\Throwable $e) {
+            Log::error('TblMultimedia store error', ['msg'=>$e->getMessage()]);
+            return back()->withErrors($e->getMessage())->withInput();
         }
     }
 
-    public function show(Tblmultimedia $tblmultimedia)
+    public function show($id)
     {
-        return view('pages.tblmultimedia.show', ['item' => $tblmultimedia]);
+        $item = TblMultimedia::findOrFail($id);
+        return view('pages.tblmultimedia.show', compact('item'));
     }
 
-    public function edit(Tblmultimedia $tblmultimedia)
+    public function edit($id)
     {
-        return view('pages.tblmultimedia.edit', ['item' => $tblmultimedia]);
+        $item = TblMultimedia::findOrFail($id);
+        return view('pages.tblmultimedia.edit', compact('item'));
     }
 
-    public function update(Request $request, Tblmultimedia $tblmultimedia)
+    public function update(Request $request, $id)
     {
-        $data = $request->all();
+        $item = TblMultimedia::findOrFail($id);
+
+        $data = $request->validate([
+            'idRegistros'  => ['nullable','string','max:255'],
+            'type'         => ['nullable','string','max:255'],
+            'format'       => ['nullable','string','max:255'],
+            'identifier'   => ['nullable','string'],
+            'title'        => ['nullable','string','max:255'],
+            'description'  => ['nullable','string'],
+            'created'      => ['nullable','date'],
+            'creator'      => ['nullable','string','max:255'],
+            'contributor'  => ['nullable','string','max:255'],
+            'publisher'    => ['nullable','string','max:255'],
+            'license'      => ['nullable','string','max:255'],
+        ]);
+
         try {
-            $this->tx(fn () => $tblmultimedia->update($data));
-            return redirect()->route('tblmultimedia.index')->with('ok','Actualizado');
-        } catch (QueryException $e) {
-            return back()->withErrors('No se pudo actualizar.')->withInput();
+            DB::transaction(fn () => $item->update($data));
+            return redirect()->route('tbl-multimedia.show', $item->idMultimedia)->with('ok','Actualizado');
+        } catch (\Throwable $e) {
+            Log::error('TblMultimedia update error', ['msg'=>$e->getMessage()]);
+            return back()->withErrors($e->getMessage())->withInput();
         }
     }
 
-    public function destroy(Tblmultimedia $tblmultimedia)
+    public function destroy($id)
     {
+        $item = TblMultimedia::findOrFail($id);
         try {
-            $this->tx(fn () => $tblmultimedia->delete());
-            return back()->with('ok','Eliminado');
-        } catch (QueryException $e) {
-            return back()->withErrors('No se pudo eliminar (posibles FKs).');
+            DB::transaction(fn () => $item->delete());
+            return redirect()->route('tbl-multimedia.index')->with('ok','Eliminado');
+        } catch (\Throwable $e) {
+            Log::error('TblMultimedia destroy error', ['msg'=>$e->getMessage()]);
+            return back()->withErrors($e->getMessage());
         }
     }
 }

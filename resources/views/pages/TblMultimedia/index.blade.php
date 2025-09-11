@@ -4,7 +4,7 @@
 @section('content')
 <div class="d-flex" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
   <h1 style="margin:0;font-size:1.25rem;">Tblmultimedia</h1>
-  <a href="{{ route('TblMultimedia.create') }}" class="btn primary">Nuevo</a>
+  <a href="{{ route('tbl-multimedia.create') }}" class="btn primary">Nuevo</a>
 </div>
 
 <div class="card">
@@ -32,9 +32,9 @@
             <td>{{ $item->identifier }}</td>
             <td>{{ $item->title }}</td>
             <td style="text-align:right;">
-              <a class="btn ghost" href="{{ route('TblMultimedia.show', $item) }}">Ver</a>
-              <a class="btn ghost warn" href="{{ route('TblMultimedia.edit', $item) }}">Editar</a>
-              <form style="display:inline" method="POST" action="{{ route('TblMultimedia.destroy', $item) }}" onsubmit="return confirm('¿Eliminar?')">
+              <a class="btn ghost" href="{{ route('tbl-multimedia.show', $item) }}">Ver</a>
+              <a class="btn ghost warn" href="{{ route('tbl-multimedia.edit', $item) }}">Editar</a>
+              <form style="display:inline" method="POST" action="{{ route('tbl-multimedia.destroy', $item) }}" onsubmit="return confirm('¿Eliminar?')">
                 @csrf @method('DELETE')
                 <button class="btn ghost danger" type="submit">Eliminar</button>
               </form>

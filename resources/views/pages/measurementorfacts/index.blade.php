@@ -4,7 +4,7 @@
 @section('content')
 <div class="d-flex" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
   <h1 style="margin:0;font-size:1.25rem;">Measurementorfacts</h1>
-  <a href="{{ route('measurementorfacts.create') }}" class="btn primary">Nuevo</a>
+  <a href="{{ route('measurement-or-facts.create') }}" class="btn primary">Nuevo</a>
 </div>
 
 <div class="card">
@@ -32,9 +32,9 @@
             <td>{{ $item->measurementAccuracy }}</td>
             <td>{{ $item->measurementUnit }}</td>
             <td style="text-align:right;">
-              <a class="btn ghost" href="{{ route('measurementorfacts.show', $item) }}">Ver</a>
-              <a class="btn ghost warn" href="{{ route('measurementorfacts.edit', $item) }}">Editar</a>
-              <form style="display:inline" method="POST" action="{{ route('measurementorfacts.destroy', $item) }}" onsubmit="return confirm('¿Eliminar?')">
+              <a class="btn ghost" href="{{ route('measurement-or-facts.show', $item) }}">Ver</a>
+              <a class="btn ghost warn" href="{{ route('measurement-or-facts.edit', $item) }}">Editar</a>
+              <form style="display:inline" method="POST" action="{{ route('measurement-or-facts.destroy', $item) }}" onsubmit="return confirm('¿Eliminar?')">
                 @csrf @method('DELETE')
                 <button class="btn ghost danger" type="submit">Eliminar</button>
               </form>

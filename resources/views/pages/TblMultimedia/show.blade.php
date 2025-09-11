@@ -34,8 +34,8 @@
     </dl>
 
     <div style="margin-top:12px;">
-      <a class="btn" href="{{ route('TblMultimedia.edit', $item) }}">Editar</a>
-      <a class="btn" href="{{ route('TblMultimedia.index') }}">Volver</a>
+      <a class="btn" href="{{ route('tbl-multimedia.edit', $item) }}">Editar</a>
+      <a class="btn" href="{{ route('tbl-multimedia.index') }}">Volver</a>
     </div>
   </div>
 </div>

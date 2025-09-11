@@ -180,6 +180,22 @@ Route::resource('vocab-tblprimers-primer-direction', PrimerDirectionController::
     ->names('vocab-tblprimers-primer-direction')
     ->parameters(['vocab-tblprimers-primer-direction' => 'primerDirection']);
 
+// ==================== MEASUREMENTS ===================
+use App\Http\Controllers\Web\TblmultimediaController;
+use App\Http\Controllers\Web\MeasurementorfactsController;
+use App\Http\Controllers\Web\TblextractionsController;
+
+Route::resource('tbl-multimedia', TblmultimediaController::class)
+    ->names('tbl-multimedia')
+    ->parameters(['tbl-multimedia' => 'multimedia']);
+
+Route::resource('measurement-or-facts', MeasurementorfactsController::class)
+    ->names('measurement-or-facts')
+    ->parameters(['measurement-or-facts' => 'measurement']);
+
+Route::resource('tbl-extractions', TblextractionsController::class)
+    ->names('tbl-extractions')
+    ->parameters(['tbl-extractions' => 'extraction']);
 
 // ===================== USAR AJAX ======================
 

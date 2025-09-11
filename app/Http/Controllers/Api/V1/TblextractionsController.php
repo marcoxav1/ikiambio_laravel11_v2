@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tblextracciones;
+use App\Models\Tblextractions;
 use Illuminate\Http\Request;
 
-class TblextraccionesController extends Controller
+class TblextractionsController extends Controller
 {
     public function index(Request $request)
     {
         $perPage = min(max((int) $request->query('per_page', 15), 1), 100);
-        return Tblextracciones::paginate($perPage);
+        return Tblextractions::paginate($perPage);
     }
 
     public function store(Request $request)
@@ -42,25 +42,25 @@ class TblextraccionesController extends Controller
             'extractionStaff' => ['nullable'],
             'qualityRemarks' => ['nullable']
         ]);
-        $item = Tblextracciones::create($data);
+        $item = Tblextractions::create($data);
         return response()->json($item, 201);
     }
 
-    public function show(Tblextracciones $tblextracciones)
+    public function show(Tblextractions $tblextractions)
     {
-        return $tblextracciones;
+        return $tblextractions;
     }
 
-    public function update(Request $request, Tblextracciones $tblextracciones)
+    public function update(Request $request, Tblextractions $tblextractions)
     {
         $data = $request->all();
-        $tblextracciones->update($data);
-        return $tblextracciones;
+        $tblextractions->update($data);
+        return $tblextractions;
     }
 
-    public function destroy(Tblextracciones $tblextracciones)
+    public function destroy(Tblextractions $tblextractions)
     {
-        $tblextracciones->delete();
+        $tblextractions->delete();
         return response()->noContent();
     }
 }

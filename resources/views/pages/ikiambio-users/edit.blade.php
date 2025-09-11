@@ -6,10 +6,16 @@
 @section('content')
 <h1 class="h4 mb-3">Editar usuario #{{ $user->id }}</h1>
 
-@if($errors->any())
+@if (session('ok'))
+  <div class="alert alert-success">{{ session('ok') }}</div>
+@endif
+
+@if ($errors->any())
   <div class="alert alert-danger">
     <ul class="mb-0">
-      @foreach($errors->all() as $e) <li>{{ $e }}</li> @endforeach
+      @foreach ($errors->all() as $err)
+        <li>{{ $err }}</li>
+      @endforeach
     </ul>
   </div>
 @endif

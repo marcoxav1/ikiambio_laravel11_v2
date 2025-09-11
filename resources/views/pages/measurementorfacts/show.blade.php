@@ -30,8 +30,8 @@
     </dl>
 
     <div style="margin-top:12px;">
-      <a class="btn" href="{{ route('measurementorfacts.edit', $item) }}">Editar</a>
-      <a class="btn" href="{{ route('measurementorfacts.index') }}">Volver</a>
+      <a class="btn" href="{{ route('measurement-or-facts.edit', $item) }}">Editar</a>
+      <a class="btn" href="{{ route('measurement-or-facts.index') }}">Volver</a>
     </div>
   </div>
 </div>
