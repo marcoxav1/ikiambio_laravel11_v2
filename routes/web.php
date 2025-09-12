@@ -195,7 +195,7 @@ Route::resource('measurement-or-facts', MeasurementorfactsController::class)
 
 Route::resource('tbl-extractions', TblextractionsController::class)
     ->names('tbl-extractions')
-    ->parameters(['tbl-extractions' => 'extraction']);
+    ->parameters(['tbl-extractions' => 'tblextractions']);
 
 // ===================== USAR AJAX ======================
 

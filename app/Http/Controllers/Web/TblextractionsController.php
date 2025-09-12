@@ -14,7 +14,10 @@ class TblextractionsController extends Controller
 
     public function index()
     {
-        $items = Tblextractions::orderByDesc('id')->paginate(15);
+        
+         $pk = (new Tblextractions)->getKeyName(); // 'idExtracciones'
+        $items = Tblextractions::orderByDesc($pk)->paginate(15);
+        
         return view('pages.tblextractions.index', compact('items'));
     }
 
