@@ -128,6 +128,26 @@
               <a class="item {{ request()->routeIs('vocab-occurrence-disposition.*') ? 'active' : '' }}" href="{{ route('vocab-occurrence-disposition.index') }}">
                 @include('svg.check') <span>Disposition</span>
               </a>
+
+              @if (Route::has('measurement-or-facts.index'))
+                <a class="item {{ request()->routeIs('measurement-or-facts.*') ? 'active' : '' }}"
+                  href="{{ route('measurement-or-facts.index') }}">
+                  @include('svg.check') <span>Measurement / Facts</span>
+                </a>
+              @endif
+              @if (Route::has('tbl-multimedia.index'))
+                <a class="item {{ request()->routeIs('tbl-multimedia.*') ? 'active' : '' }}"
+                  href="{{ route('tbl-multimedia.index') }}">
+                  @include('svg.check') <span>Multimedia</span>
+                </a>
+              @endif
+              @if (Route::has('tbl-extractions.index'))
+                <a class="item {{ request()->routeIs('tbl-extractions.*') ? 'active' : '' }}"
+                  href="{{ route('tbl-extractions.index') }}">
+                  @include('svg.check') <span>Extracciones</span>
+                </a>
+              @endif
+
             </div>
           </div>
 
@@ -226,36 +246,7 @@
               @endif
             </div>
           </div>
-
-          {{-- ====================== OTROS ===================== --}}
-          <div class="group collapsible {{ (request()->routeIs('measurement-or-facts.*') || request()->routeIs('tbl-multimedia.*')) ? 'open' : '' }}" data-key="otros">
-            <button class="group-header" type="button">
-              <span>Otros</span>
-              <span class="chev" aria-hidden="true"></span>
-            </button>
-
-            <div class="group-items">
-              @if (Route::has('measurement-or-facts.index'))
-                <a class="item {{ request()->routeIs('measurement-or-facts.*') ? 'active' : '' }}"
-                  href="{{ route('measurement-or-facts.index') }}">
-                  @include('svg.check') <span>Measurement / Facts</span>
-                </a>
-              @endif
-              @if (Route::has('tbl-multimedia.index'))
-                <a class="item {{ request()->routeIs('tbl-multimedia.*') ? 'active' : '' }}"
-                  href="{{ route('tbl-multimedia.index') }}">
-                  @include('svg.check') <span>Multimedia</span>
-                </a>
-              @endif
-              @if (Route::has('tbl-extractions.index'))
-                <a class="item {{ request()->routeIs('tbl-extractions.*') ? 'active' : '' }}"
-                  href="{{ route('tbl-extractions.index') }}">
-                  @include('svg.check') <span>Extracciones</span>
-                </a>
-              @endif  
-            </div>
-          </div>
-
+          
         </div>
       </div>
 
