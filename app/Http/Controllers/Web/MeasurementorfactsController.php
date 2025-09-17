@@ -19,7 +19,11 @@ class MeasurementorfactsController extends Controller
 
     public function create()
     {
-        return view('pages.measurementorfacts.create');
+
+        $occurrenceId = request('occurrence'); // viene del query string
+        return view('pages.measurementorfacts.create', compact('occurrenceId'));
+
+        /* return view('pages.measurementorfacts.create'); */
     }
 
     public function store(Request $request)

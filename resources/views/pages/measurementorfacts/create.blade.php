@@ -25,7 +25,8 @@
 
     <div>
       <label class="label">Id occ bd</label>
-      <input type="text" name="id_occ_bd" value="{{ old('id_occ_bd', isset($item)? $item->id_occ_bd : '') }}" class="input">
+      {{-- <input type="text" name="id_occ_bd" value="{{ old('id_occ_bd', isset($item)? $item->id_occ_bd : '') }}" class="input"> --}}
+      <input type="text" name="id_occ_bd" value="{{ old('id_occ_bd', $occurrenceId) }}" class="input" disabled>
     </div>
 
     <div>

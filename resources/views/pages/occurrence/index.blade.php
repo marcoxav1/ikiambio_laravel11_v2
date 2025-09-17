@@ -48,7 +48,15 @@
                 <td>{{ $row->establishmentMeansRef?->estabmeans_value }}</td>
                 {{-- <td>{{ $row->dispositionRef?->disposition_value }}</td> --}}
                 <td class="text-nowrap">
-                  <a href="{{ route('occurrence.edit',$row) }}" class="btn btn-sm btn-primary">MeasureMF</a><br/>
+                 {{--  <a href="{{ route('occurrence.edit',$row) }}" class="btn btn-sm btn-primary">MeasureMF</a><br/> --}}
+
+
+                  <a href="{{ route('measurement-or-facts.create', ['occurrence' => $row->id_occ_bd]) }}"
+                    class="btn btn-sm btn-outline-primary">
+                    Asociar Measurement of Fact
+                  </a><br/>
+
+
                   <a href="{{ route('occurrence.edit',$row) }}" class="btn btn-sm btn-primary">Multimedia</a><br/>
                   <a href="{{ route('occurrence.edit',$row) }}" class="btn btn-sm btn-primary">Extractions</a><br/>
                 </td>
