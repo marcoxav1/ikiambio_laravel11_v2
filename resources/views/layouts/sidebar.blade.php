@@ -20,22 +20,22 @@
         @include('svg.users')
         <span>LOCATION</span>
       </a>
-      <a class="item {{ request()->routeIs('organism.*') ? 'active' : '' }}" href="{{ route('organism.index') }}">
+     {{--  <a class="item {{ request()->routeIs('organism.*') ? 'active' : '' }}" href="{{ route('organism.index') }}">
         @include('svg.cap')
         <span>ORGANISM</span>
-      </a>
+      </a> --}}
       <a class="item {{ request()->routeIs('taxon.*') ? 'active' : '' }}" href="{{ route('taxon.index') }}">
         @include('svg.list')
         <span>TAXON</span>
       </a>
-      <a class="item {{ request()->routeIs('record-level.*') ? 'active' : '' }}" href="{{ route('record-level.index') }}">
+      {{-- <a class="item {{ request()->routeIs('record-level.*') ? 'active' : '' }}" href="{{ route('record-level.index') }}">
         @include('svg.shield')
         <span>RECORD LEVEL</span>
-      </a>
-       <a class="item {{ request()->routeIs('identification.*') ? 'active' : '' }}" href="{{ route('identification.index') }}">
+      </a> --}}
+      {{--  <a class="item {{ request()->routeIs('identification.*') ? 'active' : '' }}" href="{{ route('identification.index') }}">
         @include('svg.role')
         <span>IDENTIFICATION</span>
-      </a>
+      </a> --}}
       <a class="item {{ request()->routeIs('occurrence.*') ? 'active' : '' }}" href="{{ route('occurrence.index') }}">
           @include('svg.users')
           <span>OCCURRENCE</span>
@@ -246,7 +246,7 @@
               @endif
             </div>
           </div>
-          
+
         </div>
       </div>
 

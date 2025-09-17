@@ -56,7 +56,7 @@ class RecordLevelController extends Controller
     } */
 
     /** Búsqueda simple para reutilizar record levels existentes */
-    public function search(Request $request)
+    /* public function search(Request $request)
     {
         $q = trim((string)$request->query('q', ''));
         if ($q === '') return response()->json([]);
@@ -65,6 +65,7 @@ class RecordLevelController extends Controller
             ->when(ctype_digit($q), fn($qq) => $qq->orWhere('record_level_id', (int)$q))
             ->orWhere('datasetName', 'ilike', "%{$q}%")
             ->orWhere('references', 'ilike', "%{$q}%")
+            ->orWhere('datasetID', 'ilike', "%{$q}%")
             ->orderByDesc('record_level_id')
             ->limit(20)
             ->get(['record_level_id','datasetName','references','datasetID']);
@@ -75,7 +76,69 @@ class RecordLevelController extends Controller
                 'text' => '#'.$r->record_level_id.' - '.$r->references.' - '.$r->datasetID.' - '.($r->datasetName ? ' - '.$r->datasetName : ''),
             ])
         );
+    }     */
+
+
+    public function search(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        if ($q === '') {
+            return response()->json([]);
+        }
+
+        // Opcional: permitir que, si estás editando una Occurrence, el RL ya vinculado
+        // aparezca también en resultados para poder re-usarlo.
+        $currentId = $request->query('current_id'); // ej: /search?q=pepe&current_id=12
+
+        $builder = RecordLevel::query();
+
+        // 1) Restringe a los que NO están asociados a Occurrence (o el current_id si fue pasado)
+        $builder->where(function ($w) use ($currentId) {
+            // NOT IN (SELECT record_level_id FROM occurrence WHERE record_level_id IS NOT NULL)
+            $w->whereNotIn('record_level_id', function ($sub) {
+                $sub->select('record_level_id')
+                    ->from('occurrence')
+                    ->whereNotNull('record_level_id');
+            });
+
+            if ($currentId) {
+                // Incluye el actual si se está editando
+                $w->orWhere('record_level_id', (int) $currentId);
+            }
+        });
+
+        // 2) Búsqueda por texto/ID (agrupada para no romper la condición anterior)
+        $builder->where(function ($w) use ($q) {
+            if (ctype_digit($q)) {
+                $w->orWhere('record_level_id', (int) $q);
+            }
+            $w->orWhere('datasetName', 'ilike', "%{$q}%")
+            ->orWhere('references',  'ilike', "%{$q}%")
+            ->orWhere('datasetID',   'ilike', "%{$q}%");
+        });
+
+        // 3) Orden, límite y columnas
+        $rows = $builder
+            ->orderByDesc('record_level_id')
+            ->limit(20)
+            ->get(['record_level_id','datasetName','references','datasetID']);
+
+        // 4) Formato select2-like
+        $items = $rows->map(function ($r) {
+            $label = '#'.$r->record_level_id.' - '.$r->references.' - '.$r->datasetID;
+            if (!empty($r->datasetName)) {
+                $label .= ' - '.$r->datasetName;
+            }
+            return [
+                'id'   => $r->record_level_id,
+                'text' => $label,
+            ];
+        });
+
+        return response()->json($items);
     }    
+
+
 
     /** POST /ajax/record-levels  => { id }  (crea o actualiza si envían record_level_id) */
     public function store(Request $request)

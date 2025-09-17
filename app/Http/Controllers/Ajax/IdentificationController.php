@@ -39,7 +39,7 @@ class IdentificationController extends Controller
         return response()->json(['id' => $idn->identificationID, 'label' => $label]);
     }
 
-    public function search(Request $request)
+    /* public function search(Request $request)
     {
         $q = trim((string) $request->query('q',''));
         if ($q === '') return response()->json([]);
@@ -75,5 +75,73 @@ class IdentificationController extends Controller
         }
 
         return response()->json($items);
-    }
+    } */
+
+
+    public function search(Request $request)
+    {
+        $q       = trim((string) $request->query('q',''));
+        $current = trim((string) $request->query('current','')); // opcional
+
+        if ($q === '' && $current === '') {
+            return response()->json([]);
+        }
+
+        $like = "%{$q}%";
+
+        $rows = \App\Models\Identification::query()
+            ->select([
+                'identificationID',
+                'identifiedBy',
+                'dateIdentified',
+                'identificationQualifier',
+                'identificationRemarks'
+            ])
+            // Texto buscado
+            ->when($q !== '', function ($qq) use ($like) {
+                $qq->where(function ($w) use ($like) {
+                    $w->where('identificationID', 'ilike', $like)
+                    ->orWhere('identifiedBy', 'ilike', $like)
+                    ->orWhere('identificationQualifier', 'ilike', $like)
+                    ->orWhere('identificationRemarks', 'ilike', $like);
+                });
+            })
+            // Excluir las que ya están vinculadas en occurrence
+            ->where(function ($w) use ($current) {
+                // not exists en occurrence
+                $w->whereNotExists(function ($sub) {
+                    $sub->select(DB::raw(1))
+                        ->from('occurrence')
+                        ->whereColumn('occurrence.identificationID', 'identification.identificationID');
+                });
+
+                // Pero si estoy editando y paso ?current=ID, incluir esa aunque esté vinculada
+                if ($current !== '') {
+                    $w->orWhere('identificationID', $current);
+                }
+            })
+            ->orderBy('identificationID')
+            ->limit(20)
+            ->get();
+
+        $items = $rows->map(function ($r) {
+            $meta = array_filter([
+                $r->identifiedBy,
+                $r->dateIdentified,
+                $r->identificationQualifier,
+                $r->identificationRemarks ? \Illuminate\Support\Str::limit($r->identificationRemarks, 40) : null,
+            ]);
+            return [
+                'id'   => $r->identificationID,
+                'text' => $r->identificationID.' — '.implode(' • ', $meta),
+            ];
+        });
+
+        if ($items->isEmpty()) {
+            return response()->json([['id' => '', 'text' => '— Sin resultados —']]);
+        }
+
+        return response()->json($items);
+    }   
+
 }

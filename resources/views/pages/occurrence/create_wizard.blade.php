@@ -6,7 +6,7 @@
 
 @section('content')
 <div class="container-xxl">
-  <h1 class="mb-3">Nueva Occurrence</h1>
+  <h1 class="mb-3">New Occurrence</h1>
 
   @push('scripts')
     <script>

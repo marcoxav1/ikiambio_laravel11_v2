@@ -46,10 +46,15 @@
                 <td>{{ $row->lifeStageRef?->lifestage_value }}</td>
                 <td>{{ $row->reproductiveConditionRef?->reprocond_value }}</td>
                 <td>{{ $row->establishmentMeansRef?->estabmeans_value }}</td>
-                <td>{{ $row->dispositionRef?->disposition_value }}</td>
+                {{-- <td>{{ $row->dispositionRef?->disposition_value }}</td> --}}
                 <td class="text-nowrap">
-                  <a href="{{ route('occurrence.show',$row) }}" class="btn btn-sm btn-outline-secondary">Ver</a>
-                  <a href="{{ route('occurrence.edit',$row) }}" class="btn btn-sm btn-primary">Editar</a>
+                  <a href="{{ route('occurrence.edit',$row) }}" class="btn btn-sm btn-primary">MeasureMF</a><br/>
+                  <a href="{{ route('occurrence.edit',$row) }}" class="btn btn-sm btn-primary">Multimedia</a><br/>
+                  <a href="{{ route('occurrence.edit',$row) }}" class="btn btn-sm btn-primary">Extractions</a><br/>
+                </td>
+                <td class="text-nowrap">
+                  <a href="{{ route('occurrence.show',$row) }}" class="btn btn-sm btn-outline-secondary">Ver</a><br/>
+                  <a href="{{ route('occurrence.edit',$row) }}" class="btn btn-sm btn-primary">Editar</a><br/>
                   <form action="{{ route('occurrence.destroy',$row) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar registro?')">
                     @csrf @method('DELETE')
                     <button class="btn btn-sm btn-danger">Eliminar</button>
