@@ -19,15 +19,22 @@ class TblmultimediaController extends Controller
 
     public function create()
     {
-        return view('pages.tblmultimedia.create');
+
+        $occurrenceId = request('occurrence'); // viene del query string
+        return view('pages.tblmultimedia.create', compact('occurrenceId'));
+
+        /* return view('pages.tblmultimedia.create'); */
     }
+
+
+
 
     public function store(Request $request)
     {
         $data = $request->validate([
             // Si no envías idMultimedia, lo generamos
             'idMultimedia' => ['nullable','string','max:255','unique:TblMultimedia,idMultimedia'],
-            'idRegistros'  => ['nullable','string','max:255'],
+            'id_occ_bd'  => ['nullable','string','max:255'],
             'type'         => ['nullable','string','max:255'],
             'format'       => ['nullable','string','max:255'],
             'identifier'   => ['nullable','string'],
@@ -75,7 +82,7 @@ class TblmultimediaController extends Controller
         $item = TblMultimedia::findOrFail($id);
 
         $data = $request->validate([
-            'idRegistros'  => ['nullable','string','max:255'],
+            'id_occ_bd'  => ['nullable','string','max:255'],
             'type'         => ['nullable','string','max:255'],
             'format'       => ['nullable','string','max:255'],
             'identifier'   => ['nullable','string'],

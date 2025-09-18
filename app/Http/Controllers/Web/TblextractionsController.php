@@ -23,7 +23,10 @@ class TblextractionsController extends Controller
 
     public function create()
     {
-        return view('pages.tblextractions.create');
+        $occurrenceId = request('occurrence'); // viene del query string
+        return view('pages.tblextractions.create', compact('occurrenceId'));
+
+        /* return view('pages.tblextractions.create'); */
     }
 
     public function store(Request $request)

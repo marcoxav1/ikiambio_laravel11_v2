@@ -9,8 +9,8 @@
     <dl class="row mb-0">
       <dt class="col-sm-4">Idmultimedia</dt>
       <dd class="col-sm-8">{{ $item->idMultimedia }}</dd>
-      <dt class="col-sm-4">Idregistros</dt>
-      <dd class="col-sm-8">{{ $item->idRegistros }}</dd>
+      <dt class="col-sm-4">id_occ_bd</dt>
+      <dd class="col-sm-8">{{ $item->id_occ_bd }}</dd>
       <dt class="col-sm-4">Type</dt>
       <dd class="col-sm-8">{{ $item->type }}</dd>
       <dt class="col-sm-4">Format</dt>

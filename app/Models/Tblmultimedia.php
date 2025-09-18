@@ -14,7 +14,7 @@ class Tblmultimedia extends Model
 
     protected $fillable = [
         'idMultimedia',
-        'idRegistros',
+        'id_occ_bd',
         'type',
         'format',
         'identifier',

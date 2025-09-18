@@ -53,12 +53,21 @@
 
                   <a href="{{ route('measurement-or-facts.create', ['occurrence' => $row->id_occ_bd]) }}"
                     class="btn btn-sm btn-outline-primary">
-                    Asociar Measurement of Fact
+                    Measurement +
                   </a><br/>
 
+                  <a href="{{ route('tbl-multimedia.create', ['occurrence' => $row->id_occ_bd]) }}"
+                    class="btn btn-sm btn-outline-primary">
+                    Multimedia +
+                  </a><br/>
 
-                  <a href="{{ route('occurrence.edit',$row) }}" class="btn btn-sm btn-primary">Multimedia</a><br/>
-                  <a href="{{ route('occurrence.edit',$row) }}" class="btn btn-sm btn-primary">Extractions</a><br/>
+                   <a href="{{ route('tbl-extractions.create', ['occurrence' => $row->id_occ_bd]) }}"
+                    class="btn btn-sm btn-outline-primary">
+                    Extractions +
+                  </a><br/>
+
+                  {{-- <a href="{{ route('occurrence.edit',$row) }}" class="btn btn-sm btn-primary">Multimedia</a><br/> --}}
+                  {{-- <a href="{{ route('occurrence.edit',$row) }}" class="btn btn-sm btn-primary">Extractions</a><br/> --}}
                 </td>
                 <td class="text-nowrap">
                   <a href="{{ route('occurrence.show',$row) }}" class="btn btn-sm btn-outline-secondary">Ver</a><br/>

@@ -14,7 +14,7 @@
         <thead>
           <tr>
             <th>Idmultimedia</th>
-            <th>Idregistros</th>
+            <th>id_occ_bd</th>
             <th>Type</th>
             <th>Format</th>
             <th>Identifier</th>
@@ -26,7 +26,7 @@
         @forelse($items as $item)
           <tr>
             <td>{{ $item->idMultimedia }}</td>
-            <td>{{ $item->idRegistros }}</td>
+            <td>{{ $item->id_occ_bd }}</td>
             <td>{{ $item->type }}</td>
             <td>{{ $item->format }}</td>
             <td>{{ $item->identifier }}</td>

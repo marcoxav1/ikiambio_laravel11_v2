@@ -24,8 +24,9 @@
   <div class="form-grid">
 
     <div>
-      <label class="label">Idregistros</label>
-      <input type="text" name="idRegistros" value="{{ old('idRegistros', isset($item)? $item->idRegistros : '') }}" class="input">
+      <label class="label">Id occ bd</label>
+      {{-- <input type="text" name="id_occ_bd" value="{{ old('id_occ_bd', isset($item)? $item->id_occ_bd : '') }}" class="input"> --}}
+      <input type="text" name="id_occ_bd" value="{{ old('id_occ_bd', $occurrenceId) }}" class="input" readonly>
     </div>
 
     <div>
