@@ -11,11 +11,26 @@
   {{-- Sidebar --}}
   <aside class="sidebar">
     <div class="brand brand--clickable" onclick="location.href='{{ route('home') }}'"> 
-      @include('svg.salamander') <span>IKIAMBIA</span>
+      @include('svg.salamander') <span>BIOAMAZONIA</span>
     </div>
 
     <nav class="menu">
-
+      {{-- Select Tema --}}
+      <div class="p-3">
+        <label for="theme-select" style="font-size:.85rem;display:block;margin-bottom:.25rem;">
+          Cambiar Tema
+        </label>
+        <select id="theme-select" class="form-control w-100">
+          <option value="custom">Custom</option>
+          <option value="pink">Pink</option>
+          <option value="dark-pink">Pink Dark</option>
+          <option value="dark">Dark</option>
+          <option value="high-contrast">High Contrast</option>
+          <option value="nord">Nord</option>
+          <option value="dracula">Drácula</option>
+        </select>
+      </div>
+      {{-- Fin Select Tema --}}
       <a class="item {{ request()->routeIs('location.*') ? 'active' : '' }}" href="{{ route('location.index') }}">
         @include('svg.users')
         <span>LOCATION</span>
@@ -40,6 +55,15 @@
           @include('svg.users')
           <span>OCCURRENCE</span>
       </a>      
+      <a class="item {{ request()->routeIs('ikiambio-users.*') ? 'active' : '' }}" href="{{ route('ikiambio-users.index') }}">
+        @include('svg.users')
+        <span>USUARIOS</span>
+      </a>
+
+       <a class="item {{ request()->routeIs('ikiambio-users.*') ? 'active' : '' }}" href="{{ route('ikiambio-users.index') }}">
+        @include('svg.admins')
+        <span>USUARIOS ADMINISTRADORES</span>
+      </a>      
      
       @php
         $vocabsOpen =
@@ -58,7 +82,7 @@
 
         <button class="item group-header" type="button">
         @include('svg.list')
-        <span>FUNCIONALIDADES</span>
+        <span>LENGUAJES CONTROLADOS</span>
       </button>
 
         <div class="group-items">
@@ -250,15 +274,7 @@
         </div>
       </div>
 
-      <a class="item {{ request()->routeIs('ikiambio-users.*') ? 'active' : '' }}" href="{{ route('ikiambio-users.index') }}">
-        @include('svg.users')
-        <span>Usuarios</span>
-      </a>
 
-       <a class="item {{ request()->routeIs('ikiambio-users.*') ? 'active' : '' }}" href="{{ route('ikiambio-users.index') }}">
-        @include('svg.admins')
-        <span>Usuarios administradores</span>
-      </a>
     </nav>
   </aside>
 
